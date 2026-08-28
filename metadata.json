@@ -1,0 +1,6 @@
+{
+  "name": "Equb",
+  "description": "Equb (እቁብ) - Rotating Savings and Credit Association platform for communities to save, contribute, and track cycles together.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
