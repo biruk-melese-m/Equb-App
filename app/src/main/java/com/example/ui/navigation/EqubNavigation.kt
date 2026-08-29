@@ -1,6 +1,9 @@
 package com.example.ui.navigation
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.*
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -23,11 +26,17 @@ sealed class Screen {
     object Onboarding : Screen()
     object Login : Screen()
     object SignUp : Screen()
-    object OtpVerification : Screen()
+    data class OtpVerification(val phoneNumber: String = "+251 911 234 567") : Screen()
     object SetPassword : Screen()
     object MainDashboard : Screen()
     data class EqubDetails(val equb: EqubItem) : Screen()
     data class ApplyInEqub(val equb: EqubItem) : Screen()
+    data class IdentityVerification(
+        val equb: EqubItem,
+        val fullName: String,
+        val phone: String,
+        val reason: String
+    ) : Screen()
     object ApplicationSubmitted : Screen()
     object MyApplications : Screen()
     object ApplicationApproved : Screen()
@@ -86,257 +95,289 @@ fun EqubApp() {
 
     val equbs by EqubRepository.equbs.collectAsState()
     val members by EqubRepository.members.collectAsState()
-    val defaultEqub = equbs.first()
-    val defaultMember = members.first()
 
-    if (isAuthFlow) {
-        when (currentScreen) {
-            is Screen.Splash -> {
-                SplashScreen(
-                    onSplashFinished = { replaceRoot(Screen.Onboarding) }
-                )
+    AnimatedContent(
+        targetState = currentScreen,
+        transitionSpec = {
+            if (targetState is Screen.Splash) {
+                fadeIn(animationSpec = tween(300)) togetherWith fadeOut(animationSpec = tween(300))
+            } else {
+                (slideInHorizontally(
+                    initialOffsetX = { fullWidth -> (fullWidth * 0.15f).toInt() },
+                    animationSpec = tween(280, easing = FastOutSlowInEasing)
+                ) + fadeIn(animationSpec = tween(280, easing = FastOutSlowInEasing))) togetherWith
+                        (slideOutHorizontally(
+                            targetOffsetX = { fullWidth -> (-fullWidth * 0.15f).toInt() },
+                            animationSpec = tween(280, easing = FastOutSlowInEasing)
+                        ) + fadeOut(animationSpec = tween(280, easing = FastOutSlowInEasing)))
             }
-            is Screen.Onboarding -> {
-                OnboardingScreen(
-                    onFinishOnboarding = { replaceRoot(Screen.Login) }
-                )
-            }
-            is Screen.Login -> {
-                LoginScreen(
-                    onLoginSuccess = { replaceRoot(Screen.MainDashboard) },
-                    onNavigateToSignUp = { navigateTo(Screen.SignUp) },
-                    onForgotPassword = { navigateTo(Screen.OtpVerification) }
-                )
-            }
-            is Screen.SignUp -> {
-                SignUpScreen(
-                    onSignUpSuccess = { navigateTo(Screen.OtpVerification) },
-                    onNavigateToLogin = { popBack() },
-                    onBack = { popBack() }
-                )
-            }
-            is Screen.OtpVerification -> {
-                OtpVerificationScreen(
-                    onVerifySuccess = { navigateTo(Screen.SetPassword) },
-                    onBack = { popBack() }
-                )
-            }
-            is Screen.SetPassword -> {
-                SetPasswordScreen(
-                    onContinue = { replaceRoot(Screen.MainDashboard) },
-                    onBack = { popBack() }
-                )
-            }
-            else -> {}
-        }
-    } else {
-        // Main App Shell with Bottom Navigation for root tabs
-        val isRootTabScreen = currentScreen is Screen.MainDashboard
+        },
+        label = "AppScreenTransition"
+    ) { screen ->
+        if (screen is Screen.Splash) {
+            SplashScreen(onSplashFinished = { replaceRoot(Screen.Onboarding) })
+        } else if (screen is Screen.Onboarding) {
+            OnboardingScreen(onFinishOnboarding = { replaceRoot(Screen.Login) })
+        } else if (screen is Screen.Login) {
+            LoginScreen(
+                onLoginSuccess = { replaceRoot(Screen.MainDashboard) },
+                onNavigateToSignUp = { navigateTo(Screen.SignUp) },
+                onNavigateToOtp = { phone -> navigateTo(Screen.OtpVerification(phone)) }
+            )
+        } else if (screen is Screen.SignUp) {
+            SignUpScreen(
+                onSignUpSuccess = { phone -> navigateTo(Screen.OtpVerification(phone)) },
+                onNavigateToLogin = { popBack() },
+                onBack = { popBack() }
+            )
+        } else if (screen is Screen.OtpVerification) {
+            OtpVerificationScreen(
+                phoneNumber = screen.phoneNumber,
+                onVerifySuccess = { replaceRoot(Screen.MainDashboard) },
+                onBack = { popBack() }
+            )
+        } else if (screen is Screen.SetPassword) {
+            SetPasswordScreen(
+                onContinue = { replaceRoot(Screen.MainDashboard) },
+                onBack = { popBack() }
+            )
+        } else {
+            // Main App Shell with Bottom Navigation for root tabs
+            val isRootTabScreen = screen is Screen.MainDashboard
 
-        Scaffold(
-            modifier = Modifier.fillMaxSize(),
-            snackbarHost = { SnackbarHost(snackbarHostState) },
-            bottomBar = {
-                if (isRootTabScreen) {
-                    EqubBottomNavBar(
-                        selectedTab = currentTab,
-                        onTabSelected = { tab ->
-                            currentTab = tab
-                        }
-                    )
-                }
-            }
-        ) { innerPadding ->
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(if (isRootTabScreen) innerPadding else androidx.compose.foundation.layout.PaddingValues())
-            ) {
-                if (isRootTabScreen) {
-                    when (currentTab) {
-                        EqubTab.HOME -> {
-                            HomeDashboardScreen(
-                                onSelectEqub = { equb -> navigateTo(Screen.EqubDetails(equb)) },
-                                onNavigateToActiveEqub = { navigateTo(Screen.ActiveEqub) },
-                                onNavigateToSubmitPayment = { navigateTo(Screen.SubmitPaymentProof) },
-                                onNavigateToDiscover = { currentTab = EqubTab.EXPLORE },
-                                onNavigateToMessages = { navigateTo(Screen.MessagesAnnouncements) }
-                            )
-                        }
-                        EqubTab.EXPLORE -> {
-                            DiscoverEqubsScreen(
-                                onSelectEqub = { equb -> navigateTo(Screen.EqubDetails(equb)) }
-                            )
-                        }
-                        EqubTab.MY_EQUBS -> {
-                            ActiveEqubScreen(
-                                onViewCycle = { navigateTo(Screen.CurrentRoundStatus) },
-                                onViewMembers = { navigateTo(Screen.EqubMembersList) },
-                                onViewSchedule = { navigateTo(Screen.EqubPaymentSchedule) }
-                            )
-                        }
-                        EqubTab.PAYMENTS -> {
-                            AllPaymentTransactionsScreen(
-                                onBack = { currentTab = EqubTab.HOME }
-                            )
-                        }
-                        EqubTab.PROFILE -> {
-                            ProfileSettingsScreen(
-                                onNavigateToRules = { navigateTo(Screen.EqubRules) },
-                                onNavigateToAbout = { navigateTo(Screen.AboutEqub) },
-                                onNavigateToHelp = { navigateTo(Screen.HelpSupport) },
-                                onNavigateToInvite = { navigateTo(Screen.InviteShare) },
-                                onLogout = { replaceRoot(Screen.Login) }
-                            )
-                        }
+            Scaffold(
+                modifier = Modifier.fillMaxSize(),
+                snackbarHost = { SnackbarHost(snackbarHostState) },
+                bottomBar = {
+                    if (isRootTabScreen) {
+                        EqubBottomNavBar(
+                            selectedTab = currentTab,
+                            onTabSelected = { tab -> currentTab = tab }
+                        )
                     }
-                } else {
-                    when (currentScreen) {
-                        is Screen.EqubDetails -> {
-                            EqubDetailsScreen(
-                                equb = currentScreen.equb,
-                                onApplyNow = { navigateTo(Screen.ApplyInEqub(currentScreen.equb)) },
-                                onBack = { popBack() }
-                            )
-                        }
-                        is Screen.ApplyInEqub -> {
-                            EqubApplicationFormScreen(
-                                equb = currentScreen.equb,
-                                onSubmit = { navigateTo(Screen.ApplicationSubmitted) },
-                                onBack = { popBack() }
-                            )
-                        }
-                        is Screen.ApplicationSubmitted -> {
-                            ApplicationSubmittedScreen(
-                                onViewMyApplications = { navigateTo(Screen.MyApplications) }
-                            )
-                        }
-                        is Screen.MyApplications -> {
-                            MyApplicationsScreen(
-                                onSelectApplication = { app ->
-                                    if (app.status == "Approved") {
-                                        navigateTo(Screen.ApplicationApproved)
-                                    } else {
-                                        // Demo approval on click
-                                        EqubRepository.approveApplication(app.id)
-                                        navigateTo(Screen.ApplicationApproved)
-                                    }
-                                },
-                                onBack = { popBack() }
-                            )
-                        }
-                        is Screen.ApplicationApproved -> {
-                            ApplicationApprovedScreen(
-                                onGoToMyEqub = { navigateTo(Screen.EqubJoinedOverview) },
-                                onBack = { popBack() }
-                            )
-                        }
-                        is Screen.EqubJoinedOverview -> {
-                            EqubJoinedScreen(
-                                onGoToMyEqub = {
-                                    currentTab = EqubTab.MY_EQUBS
-                                    replaceRoot(Screen.MainDashboard)
-                                },
-                                onBack = { popBack() }
-                            )
-                        }
-                        is Screen.ActiveEqub -> {
-                            ActiveEqubScreen(
-                                onViewCycle = { navigateTo(Screen.CurrentRoundStatus) },
-                                onViewMembers = { navigateTo(Screen.EqubMembersList) },
-                                onViewSchedule = { navigateTo(Screen.EqubPaymentSchedule) },
-                                onBack = { popBack() }
-                            )
-                        }
-                        is Screen.CurrentRoundStatus -> {
-                            CurrentRoundStatusScreen(
-                                onNavigateToMembers = { navigateTo(Screen.EqubMembersList) },
-                                onNavigateToSchedule = { navigateTo(Screen.EqubPaymentSchedule) },
-                                onBack = { popBack() }
-                            )
-                        }
-                        is Screen.EqubMembersList -> {
-                            EqubMembersListScreen(
-                                onSelectMember = { member -> navigateTo(Screen.MemberProfileDetail(member)) },
-                                onBack = { popBack() }
-                            )
-                        }
-                        is Screen.MemberProfileDetail -> {
-                            MemberProfileDetailScreen(
-                                member = currentScreen.member,
-                                onSendMessage = { navigateTo(Screen.MessagesAnnouncements) },
-                                onBack = { popBack() }
-                            )
-                        }
-                        is Screen.EqubPaymentSchedule -> {
-                            EqubPaymentScheduleScreen(
-                                onBack = { popBack() }
-                            )
-                        }
-                        is Screen.AllTransactions -> {
-                            AllPaymentTransactionsScreen(
-                                onBack = { popBack() }
-                            )
-                        }
-                        is Screen.MyPaymentHistory -> {
-                            MyPaymentHistoryScreen(
-                                onBack = { popBack() }
-                            )
-                        }
-                        is Screen.PayoutHistory -> {
-                            PayoutHistoryScreen(
-                                onViewAll = { navigateTo(Screen.AllTransactions) },
-                                onBack = { popBack() }
-                            )
-                        }
-                        is Screen.SubmitPaymentProof -> {
-                            SubmitPaymentProofScreen(
-                                onSubmitSuccess = { navigateTo(Screen.PaymentPendingReview) },
-                                onBack = { popBack() }
-                            )
-                        }
-                        is Screen.PaymentPendingReview -> {
-                            PaymentPendingReviewScreen(
-                                onBackToDashboard = {
-                                    currentTab = EqubTab.HOME
-                                    replaceRoot(Screen.MainDashboard)
+                }
+            ) { innerPadding ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(if (isRootTabScreen) innerPadding else androidx.compose.foundation.layout.PaddingValues())
+                ) {
+                    if (isRootTabScreen) {
+                        AnimatedContent(
+                            targetState = currentTab,
+                            transitionSpec = {
+                                fadeIn(animationSpec = tween(220, easing = FastOutSlowInEasing)) togetherWith
+                                        fadeOut(animationSpec = tween(180, easing = FastOutSlowInEasing))
+                            },
+                            label = "BottomTabTransition"
+                        ) { tab ->
+                            when (tab) {
+                                EqubTab.HOME -> {
+                                    HomeDashboardScreen(
+                                        onSelectEqub = { equb -> navigateTo(Screen.EqubDetails(equb)) },
+                                        onNavigateToActiveEqub = { navigateTo(Screen.ActiveEqub) },
+                                        onNavigateToSubmitPayment = { navigateTo(Screen.SubmitPaymentProof) },
+                                        onNavigateToDiscover = { currentTab = EqubTab.EXPLORE },
+                                        onNavigateToMessages = { navigateTo(Screen.MessagesAnnouncements) }
+                                    )
                                 }
-                            )
+                                EqubTab.EXPLORE -> {
+                                    DiscoverEqubsScreen(
+                                        onSelectEqub = { equb -> navigateTo(Screen.EqubDetails(equb)) }
+                                    )
+                                }
+                                EqubTab.MY_EQUBS -> {
+                                    ActiveEqubScreen(
+                                        onViewCycle = { navigateTo(Screen.CurrentRoundStatus) },
+                                        onViewMembers = { navigateTo(Screen.EqubMembersList) },
+                                        onViewSchedule = { navigateTo(Screen.EqubPaymentSchedule) }
+                                    )
+                                }
+                                EqubTab.PAYMENTS -> {
+                                    AllPaymentTransactionsScreen(
+                                        onBack = { currentTab = EqubTab.HOME }
+                                    )
+                                }
+                                EqubTab.PROFILE -> {
+                                    ProfileSettingsScreen(
+                                        onNavigateToRules = { navigateTo(Screen.EqubRules) },
+                                        onNavigateToAbout = { navigateTo(Screen.AboutEqub) },
+                                        onNavigateToHelp = { navigateTo(Screen.HelpSupport) },
+                                        onNavigateToInvite = { navigateTo(Screen.InviteShare) },
+                                        onLogout = { replaceRoot(Screen.Login) }
+                                    )
+                                }
+                            }
                         }
-                        is Screen.PaymentApprovedSuccess -> {
-                            PaymentApprovedSuccessScreen(
-                                onViewPaymentHistory = { navigateTo(Screen.MyPaymentHistory) },
-                                onBack = { popBack() }
-                            )
+                    } else {
+                        when (screen) {
+                            is Screen.EqubDetails -> {
+                                EqubDetailsScreen(
+                                    equb = screen.equb,
+                                    onApplyNow = { navigateTo(Screen.ApplyInEqub(screen.equb)) },
+                                    onBack = { popBack() }
+                                )
+                            }
+                            is Screen.ApplyInEqub -> {
+                                EqubApplicationFormScreen(
+                                    equb = screen.equb,
+                                    onNext = { fullName, phone, reason ->
+                                        navigateTo(
+                                            Screen.IdentityVerification(
+                                                equb = screen.equb,
+                                                fullName = fullName,
+                                                phone = phone,
+                                                reason = reason
+                                            )
+                                        )
+                                    },
+                                    onBack = { popBack() }
+                                )
+                            }
+                            is Screen.IdentityVerification -> {
+                                IdentityVerificationScreen(
+                                    equb = screen.equb,
+                                    fullName = screen.fullName,
+                                    phone = screen.phone,
+                                    reason = screen.reason,
+                                    onSubmitSuccess = { navigateTo(Screen.ApplicationSubmitted) },
+                                    onBack = { popBack() }
+                                )
+                            }
+                            is Screen.ApplicationSubmitted -> {
+                                ApplicationSubmittedScreen(
+                                    onBackToDashboard = {
+                                        currentTab = EqubTab.HOME
+                                        replaceRoot(Screen.MainDashboard)
+                                    }
+                                )
+                            }
+                            is Screen.MyApplications -> {
+                                MyApplicationsScreen(
+                                    onSelectApplication = { app ->
+                                        if (app.status == "Approved") {
+                                            navigateTo(Screen.ApplicationApproved)
+                                        } else {
+                                            EqubRepository.approveApplication(app.id)
+                                            navigateTo(Screen.ApplicationApproved)
+                                        }
+                                    },
+                                    onBack = { popBack() }
+                                )
+                            }
+                            is Screen.ApplicationApproved -> {
+                                ApplicationApprovedScreen(
+                                    onGoToMyEqub = { navigateTo(Screen.EqubJoinedOverview) },
+                                    onBack = { popBack() }
+                                )
+                            }
+                            is Screen.EqubJoinedOverview -> {
+                                EqubJoinedScreen(
+                                    onGoToMyEqub = {
+                                        currentTab = EqubTab.MY_EQUBS
+                                        replaceRoot(Screen.MainDashboard)
+                                    },
+                                    onBack = { popBack() }
+                                )
+                            }
+                            is Screen.ActiveEqub -> {
+                                ActiveEqubScreen(
+                                    onViewCycle = { navigateTo(Screen.CurrentRoundStatus) },
+                                    onViewMembers = { navigateTo(Screen.EqubMembersList) },
+                                    onViewSchedule = { navigateTo(Screen.EqubPaymentSchedule) },
+                                    onBack = { popBack() }
+                                )
+                            }
+                            is Screen.CurrentRoundStatus -> {
+                                CurrentRoundStatusScreen(
+                                    onNavigateToMembers = { navigateTo(Screen.EqubMembersList) },
+                                    onNavigateToSchedule = { navigateTo(Screen.EqubPaymentSchedule) },
+                                    onBack = { popBack() }
+                                )
+                            }
+                            is Screen.EqubMembersList -> {
+                                EqubMembersListScreen(
+                                    onSelectMember = { member -> navigateTo(Screen.MemberProfileDetail(member)) },
+                                    onBack = { popBack() }
+                                )
+                            }
+                            is Screen.MemberProfileDetail -> {
+                                MemberProfileDetailScreen(
+                                    member = screen.member,
+                                    onSendMessage = { navigateTo(Screen.MessagesAnnouncements) },
+                                    onBack = { popBack() }
+                                )
+                            }
+                            is Screen.EqubPaymentSchedule -> {
+                                EqubPaymentScheduleScreen(
+                                    onBack = { popBack() }
+                                )
+                            }
+                            is Screen.AllTransactions -> {
+                                AllPaymentTransactionsScreen(
+                                    onBack = { popBack() }
+                                )
+                            }
+                            is Screen.MyPaymentHistory -> {
+                                MyPaymentHistoryScreen(
+                                    onBack = { popBack() }
+                                )
+                            }
+                            is Screen.PayoutHistory -> {
+                                PayoutHistoryScreen(
+                                    onViewAll = { navigateTo(Screen.AllTransactions) },
+                                    onBack = { popBack() }
+                                )
+                            }
+                            is Screen.SubmitPaymentProof -> {
+                                SubmitPaymentProofScreen(
+                                    onSubmitSuccess = { navigateTo(Screen.PaymentPendingReview) },
+                                    onBack = { popBack() }
+                                )
+                            }
+                            is Screen.PaymentPendingReview -> {
+                                PaymentPendingReviewScreen(
+                                    onBackToDashboard = {
+                                        currentTab = EqubTab.HOME
+                                        replaceRoot(Screen.MainDashboard)
+                                    }
+                                )
+                            }
+                            is Screen.PaymentApprovedSuccess -> {
+                                PaymentApprovedSuccessScreen(
+                                    onViewPaymentHistory = { navigateTo(Screen.MyPaymentHistory) },
+                                    onBack = { popBack() }
+                                )
+                            }
+                            is Screen.MessagesAnnouncements -> {
+                                MessagesAnnouncementsScreen(
+                                    onBack = { popBack() }
+                                )
+                            }
+                            is Screen.HelpSupport -> {
+                                HelpSupportScreen(
+                                    onNavigateToRules = { navigateTo(Screen.EqubRules) },
+                                    onBack = { popBack() }
+                                )
+                            }
+                            is Screen.EqubRules -> {
+                                EqubRulesScreen(
+                                    onConfirm = { popBack() },
+                                    onBack = { popBack() }
+                                )
+                            }
+                            is Screen.AboutEqub -> {
+                                AboutEqubScreen(
+                                    onBack = { popBack() }
+                                )
+                            }
+                            is Screen.InviteShare -> {
+                                InviteShareScreen(
+                                    onBack = { popBack() }
+                                )
+                            }
+                            else -> {}
                         }
-                        is Screen.MessagesAnnouncements -> {
-                            MessagesAnnouncementsScreen(
-                                onBack = { popBack() }
-                            )
-                        }
-                        is Screen.HelpSupport -> {
-                            HelpSupportScreen(
-                                onNavigateToRules = { navigateTo(Screen.EqubRules) },
-                                onBack = { popBack() }
-                            )
-                        }
-                        is Screen.EqubRules -> {
-                            EqubRulesScreen(
-                                onConfirm = { popBack() },
-                                onBack = { popBack() }
-                            )
-                        }
-                        is Screen.AboutEqub -> {
-                            AboutEqubScreen(
-                                onBack = { popBack() }
-                            )
-                        }
-                        is Screen.InviteShare -> {
-                            InviteShareScreen(
-                                onBack = { popBack() }
-                            )
-                        }
-                        else -> {}
                     }
                 }
             }

@@ -1,16 +1,15 @@
 package com.example.ui.screens
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -19,14 +18,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.EqubItem
 import com.example.data.EqubRepository
+import com.example.ui.components.EqubAvatar
 import com.example.ui.theme.*
 
 @Composable
@@ -42,8 +43,60 @@ fun HomeDashboardScreen(
     val equbs by EqubRepository.equbs.collectAsState()
     val joinedEqubs = equbs.filter { it.isUserJoined }
 
+    // Parse numeric total savings if possible (e.g., "20,000 ETB" -> "20,000")
+    val savingsAmountText = userProfile.totalSavings
+        .replace("ETB", "")
+        .replace("etb", "")
+        .trim()
+        .ifEmpty { "20,000" }
+
     Scaffold(
         containerColor = EqubBackground,
+        topBar = {
+            // Top App Bar: Avatar (Left), EqubHub (Center), Notifications (Right)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(horizontal = 20.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Profile Avatar on Left
+                EqubAvatar(
+                    name = userProfile.fullName.ifEmpty { "Brook Melles" },
+                    modifier = Modifier
+                        .size(40.dp)
+                        .testTag("home_profile_avatar")
+                )
+
+                // App Title Centered
+                Text(
+                    text = "EqubHub",
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = EqubPrimary,
+                    letterSpacing = (-0.4).sp,
+                    modifier = Modifier.testTag("home_header_title")
+                )
+
+                // Notification Bell Icon on Right
+                IconButton(
+                    onClick = onNavigateToMessages,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .testTag("home_notifications_button")
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Notifications,
+                        contentDescription = "Notifications",
+                        tint = EqubTextSecondary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
+        },
         modifier = modifier.testTag("home_dashboard_screen")
     ) { innerPadding ->
         LazyColumn(
@@ -51,99 +104,270 @@ fun HomeDashboardScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .padding(horizontal = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp),
-            contentPadding = PaddingValues(top = 16.dp, bottom = 24.dp)
+            verticalArrangement = Arrangement.spacedBy(24.dp),
+            contentPadding = PaddingValues(top = 8.dp, bottom = 28.dp)
         ) {
-            // Greeting Header
+            // 1. Welcome Section (Centered)
             item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp, bottom = 4.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Column {
-                        Text(
-                            text = "Hi, ${userProfile.name} 👋",
-                            fontSize = 28.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = EqubTextPrimary,
-                            modifier = Modifier.testTag("home_greeting_text")
-                        )
-                        Text(
-                            text = "Welcome back to your Equbs",
-                            fontSize = 14.sp,
-                            color = EqubTextSecondary
-                        )
-                    }
-
-                    IconButton(
-                        onClick = onNavigateToMessages,
-                        modifier = Modifier
-                            .size(44.dp)
-                            .clip(CircleShape)
-                            .background(Color.White)
-                            .border(1.dp, EqubBorder, CircleShape)
-                            .testTag("home_messages_button")
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Notifications,
-                            contentDescription = "Notifications & Messages",
-                            tint = EqubPrimary
-                        )
-                    }
+                    Text(
+                        text = "Welcome back, ${userProfile.name} \uD83D\uDC4B",
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = EqubTextPrimary,
+                        letterSpacing = (-0.3).sp,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.testTag("home_greeting_text")
+                    )
                 }
             }
 
-            // Hero Purple Savings Card
+            // 2. Hero: Total Savings Card (Ultra-Minimalist)
             item {
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(20.dp))
+                        .clip(RoundedCornerShape(24.dp))
+                        .border(1.dp, Color(0xFFE2E8F8), RoundedCornerShape(24.dp))
                         .testTag("home_savings_hero_card"),
-                    colors = CardDefaults.cardColors(containerColor = Color.Transparent)
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
-                    Box(
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(
-                                Brush.verticalGradient(
-                                    listOf(EqubPurpleGradientStart, EqubPurpleGradientEnd)
-                                )
-                            )
-                            .padding(24.dp)
+                            .padding(vertical = 24.dp, horizontal = 20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
                     ) {
-                        Column(modifier = Modifier.fillMaxWidth()) {
+                        Text(
+                            text = "Total Savings",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = EqubTextSecondary,
+                            modifier = Modifier.testTag("home_total_savings_label")
+                        )
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        // Large Display Amount + Currency
+                        Row(
+                            verticalAlignment = Alignment.Bottom,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
                             Text(
-                                text = "Total Savings",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = Color.White.copy(alpha = 0.85f)
-                            )
-                            Spacer(modifier = Modifier.height(10.dp))
-                            Text(
-                                text = userProfile.totalSavings,
-                                fontSize = 36.sp,
+                                text = savingsAmountText,
+                                fontSize = 40.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color.White,
+                                color = EqubPrimary,
+                                letterSpacing = (-0.5).sp,
                                 modifier = Modifier.testTag("home_total_savings_amount")
                             )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            // Last Added Pill
-                            Surface(
-                                shape = RoundedCornerShape(20.dp),
-                                color = Color.White.copy(alpha = 0.2f),
-                                modifier = Modifier.clickable { onNavigateToSubmitPayment() }
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "ETB",
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = EqubPrimary.copy(alpha = 0.85f),
+                                modifier = Modifier.padding(bottom = 4.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        // Next Payment Pill Badge
+                        Surface(
+                            shape = CircleShape,
+                            color = Color(0xFFF0F3FF),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFCFBDFF)),
+                            modifier = Modifier.clickable { onNavigateToActiveEqub() }
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
                             ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
-                                ) {
-                                    Text(
-                                        text = "Last added: ${userProfile.lastAddedAmount} ⊕",
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.Medium,
-                                        color = Color.White
+                                Icon(
+                                    imageVector = Icons.Outlined.CalendarMonth,
+                                    contentDescription = "Calendar",
+                                    tint = EqubTextSecondary,
+                                    modifier = Modifier.size(15.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "Next Payment: 12th Oct",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = EqubTextSecondary
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 3. Quick Actions (+ Start, Join)
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // Start Button
+                    Card(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .border(1.dp, Color(0xFFCBC3D9), RoundedCornerShape(12.dp))
+                            .clickable { onNavigateToDiscover() }
+                            .testTag("home_start_button"),
+                        colors = CardDefaults.cardColors(containerColor = Color.White)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxSize(),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.AddCircleOutline,
+                                contentDescription = "Start",
+                                tint = EqubTextPrimary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Start",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = EqubTextPrimary
+                            )
+                        }
+                    }
+
+                    // Join Button
+                    Card(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .border(1.dp, Color(0xFFCBC3D9), RoundedCornerShape(12.dp))
+                            .clickable { onNavigateToDiscover() }
+                            .testTag("home_join_button"),
+                        colors = CardDefaults.cardColors(containerColor = Color.White)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxSize(),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.GroupAdd,
+                                contentDescription = "Join",
+                                tint = EqubTextPrimary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Join",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = EqubTextPrimary
+                            )
+                        }
+                    }
+                }
+            }
+
+            // 4. Section: My Equbs
+            item {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = "My Equbs",
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = EqubTextPrimary,
+                        modifier = Modifier
+                            .padding(start = 4.dp)
+                            .testTag("home_my_equbs_title")
+                    )
+
+                    // Unified Container Card with divider rows
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(20.dp))
+                            .border(1.dp, Color(0xFFE2E8F8), RoundedCornerShape(20.dp))
+                            .testTag("home_my_equbs_container"),
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                    ) {
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            // Display the joined equbs or standard items matching the design
+                            val itemsToDisplay = if (joinedEqubs.isNotEmpty()) joinedEqubs else equbs.take(3)
+
+                            itemsToDisplay.forEachIndexed { index, equb ->
+                                val (icon, iconBg, progressColor, progressFraction, percentageText) = when {
+                                    equb.title.contains("Car", ignoreCase = true) || equb.category.contains("Auto", ignoreCase = true) -> {
+                                        Tuple5(
+                                            Icons.Outlined.DirectionsCar,
+                                            Color(0xFFE8DDFF),
+                                            EqubPrimary,
+                                            0.40f,
+                                            "40%"
+                                        )
+                                    }
+                                    equb.title.contains("Tech", ignoreCase = true) || equb.id.contains("tech", ignoreCase = true) -> {
+                                        Tuple5(
+                                            Icons.Outlined.LaptopMac,
+                                            Color(0xFFEBDCFF),
+                                            Color(0xFF6D4EA2),
+                                            0.75f,
+                                            "75%"
+                                        )
+                                    }
+                                    equb.title.contains("Holiday", ignoreCase = true) || equb.title.contains("Travel", ignoreCase = true) -> {
+                                        Tuple5(
+                                            Icons.Outlined.FlightTakeoff,
+                                            Color(0xFFFFDBCF),
+                                            Color(0xFF963200),
+                                            0.15f,
+                                            "15%"
+                                        )
+                                    }
+                                    else -> {
+                                        val fraction = if (index % 2 == 0) 0.50f else 0.30f
+                                        Tuple5(
+                                            Icons.Outlined.AccountBalanceWallet,
+                                            Color(0xFFEDE8FA),
+                                            EqubPrimary,
+                                            fraction,
+                                            "${(fraction * 100).toInt()}%"
+                                        )
+                                    }
+                                }
+
+                                EqubProgressRowItem(
+                                    title = equb.title,
+                                    percentage = percentageText,
+                                    progress = progressFraction,
+                                    icon = icon,
+                                    iconBgColor = iconBg,
+                                    progressColor = progressColor,
+                                    onClick = { onSelectEqub(equb) }
+                                )
+
+                                if (index < itemsToDisplay.size - 1) {
+                                    HorizontalDivider(
+                                        color = Color(0xFFF0EDFA),
+                                        thickness = 1.dp,
+                                        modifier = Modifier.padding(start = 68.dp, end = 16.dp)
                                     )
                                 }
                             }
@@ -151,199 +375,92 @@ fun HomeDashboardScreen(
                     }
                 }
             }
-
-            // Section: My Equbs
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "My Equbs",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = EqubTextPrimary,
-                        modifier = Modifier.testTag("home_my_equbs_title")
-                    )
-
-                    Text(
-                        text = "View Active Cycle",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = EqubPrimary,
-                        modifier = Modifier
-                            .clickable { onNavigateToActiveEqub() }
-                            .padding(4.dp)
-                            .testTag("home_view_active_cycle_button")
-                    )
-                }
-            }
-
-            // My Equbs Horizontal Cards
-            item {
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    contentPadding = PaddingValues(horizontal = 2.dp)
-                ) {
-                    items(joinedEqubs) { equb ->
-                        MyEqubDashboardCard(
-                            equb = equb,
-                            onClick = { onSelectEqub(equb) }
-                        )
-                    }
-                }
-            }
-
-            // Quick Actions section
-            item {
-                Text(
-                    text = "Quick Actions",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = EqubTextPrimary
-                )
-            }
-
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    QuickActionCard(
-                        title = "Discover Equbs",
-                        icon = Icons.Outlined.Search,
-                        onClick = onNavigateToDiscover,
-                        modifier = Modifier.weight(1f)
-                    )
-                    QuickActionCard(
-                        title = "Submit Proof",
-                        icon = Icons.Outlined.UploadFile,
-                        onClick = onNavigateToSubmitPayment,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-            }
         }
     }
 }
 
 @Composable
-fun MyEqubDashboardCard(
-    equb: EqubItem,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
+private fun EqubProgressRowItem(
+    title: String,
+    percentage: String,
+    progress: Float,
+    icon: ImageVector,
+    iconBgColor: Color,
+    progressColor: Color,
+    onClick: () -> Unit
 ) {
-    Card(
-        modifier = modifier
-            .width(260.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .border(1.dp, EqubCardBorder, RoundedCornerShape(16.dp))
+    val animatedProgress by animateFloatAsState(
+        targetValue = progress,
+        animationSpec = tween(durationMillis = 700),
+        label = "equbRowProgress"
+    )
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
             .clickable { onClick() }
-            .testTag("my_equb_card_${equb.id}"),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        Column(
+        // Icon Circle
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(18.dp)
+                .size(42.dp)
+                .clip(CircleShape)
+                .background(iconBgColor),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = title,
+                tint = progressColor,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+
+        // Title + Progress Bar + Percentage
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             Row(
-                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth()
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = equb.title,
-                    fontSize = 16.sp,
+                    text = title,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = EqubTextPrimary
+                )
+                Text(
+                    text = percentage,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
-                    color = EqubTextPrimary,
-                    maxLines = 1
+                    color = progressColor
                 )
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column {
-                    Text(text = "Goal", fontSize = 12.sp, color = EqubTextSecondary)
-                    Text(text = equb.goalAmount, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = EqubTextPrimary)
-                }
-                Column(horizontalAlignment = Alignment.End) {
-                    Text(text = "Progress", fontSize = 12.sp, color = EqubTextSecondary)
-                    Text(text = equb.progressAmount, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = EqubPrimary)
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Progress bar
-            val progressFraction = if (equb.id == "equb-1") 0.25f else 0.10f
+            // Custom styled linear progress indicator
             LinearProgressIndicator(
-                progress = { progressFraction },
+                progress = { animatedProgress },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(6.dp)
-                    .clip(RoundedCornerShape(3.dp)),
-                color = EqubPrimary,
-                trackColor = Color(0xFFF0EDFA)
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Text(
-                text = "Due: ${equb.dueDate}",
-                fontSize = 12.sp,
-                color = EqubTextSecondary
+                    .clip(CircleShape),
+                color = progressColor,
+                trackColor = Color(0xFFDCE2F3)
             )
         }
     }
 }
 
-@Composable
-fun QuickActionCard(
-    title: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier
-            .clip(RoundedCornerShape(14.dp))
-            .border(1.dp, EqubCardBorder, RoundedCornerShape(14.dp))
-            .clickable { onClick() },
-        colors = CardDefaults.cardColors(containerColor = Color.White)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(38.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFFEDE8FA)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = EqubPrimary,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-            Text(
-                text = title,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = EqubTextPrimary
-            )
-        }
-    }
-}
+private data class Tuple5<A, B, C, D, E>(
+    val first: A,
+    val second: B,
+    val third: C,
+    val fourth: D,
+    val fifth: E
+)

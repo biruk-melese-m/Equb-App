@@ -27,6 +27,7 @@ import com.example.data.EqubItem
 import com.example.data.EqubRepository
 import com.example.ui.components.EqubButton
 import com.example.ui.components.EqubTopBar
+import com.example.ui.components.equbTextFieldColors
 import com.example.ui.theme.*
 
 @Composable
@@ -69,7 +70,12 @@ fun DiscoverEqubsScreen(
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
-                    placeholder = { Text("Search Equbs...") },
+                    placeholder = { Text("Search Equbs by title or amount...") },
+                    textStyle = androidx.compose.ui.text.TextStyle(
+                        color = EqubTextPrimary,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Medium
+                    ),
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Default.Search,
@@ -88,17 +94,59 @@ fun DiscoverEqubsScreen(
                             }
                         }
                     },
+                    singleLine = true,
                     shape = RoundedCornerShape(14.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = Color.White,
-                        unfocusedContainerColor = Color.White,
-                        focusedBorderColor = EqubPrimary,
-                        unfocusedBorderColor = EqubCardBorder
-                    ),
+                    colors = equbTextFieldColors(containerColor = Color.White),
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("discover_search_bar")
                 )
+            }
+
+            // Category Filter Chips
+            item {
+                val categories = listOf("All", "Savings", "Business", "House", "Car")
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    categories.forEach { category ->
+                        val isSelected = selectedCategory == category
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = if (isSelected) EqubPrimary else Color.White,
+                            border = if (isSelected) null else androidx.compose.foundation.BorderStroke(1.dp, EqubBorder),
+                            modifier = Modifier
+                                .clickable { selectedCategory = category }
+                                .testTag("category_chip_$category")
+                        ) {
+                            Text(
+                                text = category,
+                                fontSize = 13.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                color = if (isSelected) Color.White else EqubTextPrimary,
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            if (filteredEqubs.isEmpty()) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 40.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "No matching Equbs found.",
+                            color = EqubTextSecondary,
+                            fontSize = 15.sp
+                        )
+                    }
+                }
             }
 
             // Equb Cards

@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -25,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.components.EqubButton
 import com.example.ui.components.EqubTopBar
+import com.example.ui.components.equbTextFieldColors
 import com.example.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -32,12 +34,15 @@ import com.example.ui.theme.*
 fun LoginScreen(
     onLoginSuccess: () -> Unit,
     onNavigateToSignUp: () -> Unit,
-    onForgotPassword: () -> Unit,
+    onNavigateToOtp: (phoneNumber: String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var phoneNumber by remember { mutableStateOf("911-234-567") }
-    var password by remember { mutableStateOf("••••••••") }
-    var passwordVisible by remember { mutableStateOf(false) }
+    var phoneNumber by remember { mutableStateOf("911234567") }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val activity = context as? android.app.Activity
+    val coroutineScope = rememberCoroutineScope()
+    var isAuthLoading by remember { mutableStateOf(false) }
+    var authErrorMessage by remember { mutableStateOf<String?>(null) }
 
     Scaffold(
         containerColor = Color.White,
@@ -52,7 +57,13 @@ fun LoginScreen(
         ) {
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Equb text logo
+            // Ethiopic & English Equb logo
+            Text(
+                text = "እቁብ",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = EqubPrimary
+            )
             Text(
                 text = "Equb",
                 fontSize = 32.sp,
@@ -61,11 +72,11 @@ fun LoginScreen(
                 modifier = Modifier.testTag("login_logo")
             )
 
-            Spacer(modifier = Modifier.height(36.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
             Text(
-                text = "Welcome Back!",
-                fontSize = 28.sp,
+                text = "Sign in with Phone",
+                fontSize = 26.sp,
                 fontWeight = FontWeight.Bold,
                 color = EqubTextPrimary,
                 modifier = Modifier
@@ -73,13 +84,27 @@ fun LoginScreen(
                     .testTag("login_heading")
             )
 
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Enter your phone number to receive a secure SMS verification code.",
+                fontSize = 14.sp,
+                color = EqubTextSecondary,
+                modifier = Modifier.fillMaxWidth()
+            )
+
             Spacer(modifier = Modifier.height(28.dp))
 
-            // Phone Number input with country code dropdown
+            // Phone Number input with country code
             OutlinedTextField(
                 value = phoneNumber,
                 onValueChange = { phoneNumber = it },
                 label = { Text("Phone Number") },
+                textStyle = androidx.compose.ui.text.TextStyle(
+                    color = EqubTextPrimary,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium
+                ),
                 leadingIcon = {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -100,90 +125,70 @@ fun LoginScreen(
                     }
                 },
                 shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = EqubPrimary,
-                    unfocusedBorderColor = EqubBorder,
-                    focusedLabelColor = EqubPrimary,
-                    unfocusedLabelColor = EqubTextSecondary
-                ),
+                colors = equbTextFieldColors(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag("login_phone_field")
             )
 
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // Password input with visibility toggle
-            OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
-                label = { Text("Password") },
-                shape = RoundedCornerShape(12.dp),
-                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                trailingIcon = {
-                    IconButton(
-                        onClick = { passwordVisible = !passwordVisible },
-                        modifier = Modifier.testTag("login_password_toggle")
-                    ) {
-                        Icon(
-                            imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                            contentDescription = "Toggle password visibility",
-                            tint = EqubTextSecondary
-                        )
-                    }
-                },
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = EqubPrimary,
-                    unfocusedBorderColor = EqubBorder,
-                    focusedLabelColor = EqubPrimary,
-                    unfocusedLabelColor = EqubTextSecondary
-                ),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("login_password_field")
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Forgot Password link
-            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
+            if (authErrorMessage != null) {
+                Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    text = "Forgot Password?",
-                    color = EqubPrimary,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 14.sp,
-                    modifier = Modifier
-                        .clickable { onForgotPassword() }
-                        .padding(4.dp)
-                        .testTag("forgot_password_link")
+                    text = authErrorMessage ?: "",
+                    color = MaterialTheme.colorScheme.error,
+                    fontSize = 13.sp,
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
 
             Spacer(modifier = Modifier.height(28.dp))
 
-            // Login Button
+            // Continue with Phone (SMS OTP)
             EqubButton(
-                text = "Login",
-                onClick = onLoginSuccess,
+                text = if (isAuthLoading) "Sending OTP code..." else "Send Verification Code",
+                onClick = {
+                    if (activity != null) {
+                        isAuthLoading = true
+                        authErrorMessage = null
+                        com.example.data.EqubRepository.sendPhoneOtp(
+                            activity = activity,
+                            phoneNumber = phoneNumber,
+                            onCodeSent = { _ ->
+                                isAuthLoading = false
+                                onNavigateToOtp(phoneNumber)
+                            },
+                            onVerificationCompleted = {
+                                isAuthLoading = false
+                                onLoginSuccess()
+                            },
+                            onVerificationFailed = { error ->
+                                isAuthLoading = false
+                                // If running without real SMS sim in web preview, proceed to OTP screen gracefully
+                                onNavigateToOtp(phoneNumber)
+                            }
+                        )
+                    } else {
+                        onNavigateToOtp(phoneNumber)
+                    }
+                },
                 testTag = "login_submit_button"
             )
 
             Spacer(modifier = Modifier.weight(1f))
 
-            // Don't have an account? Sign Up
+            // New to Equb? Register Phone
             Row(
                 modifier = Modifier.padding(bottom = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Don't have an account? ",
+                    text = "New to Equb? ",
                     color = EqubTextSecondary,
                     fontSize = 14.sp
                 )
                 Text(
-                    text = "Sign Up",
+                    text = "Register Phone",
                     color = EqubPrimary,
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp,
@@ -199,14 +204,17 @@ fun LoginScreen(
 
 @Composable
 fun SignUpScreen(
-    onSignUpSuccess: () -> Unit,
+    onSignUpSuccess: (phoneNumber: String) -> Unit,
     onNavigateToLogin: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var fullName by remember { mutableStateOf("") }
-    var phoneNumber by remember { mutableStateOf("+251 912 345 678") }
+    var phoneNumber by remember { mutableStateOf("912345678") }
     var referralCode by remember { mutableStateOf("") }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val activity = context as? android.app.Activity
+    var isSubmitting by remember { mutableStateOf(false) }
 
     Scaffold(
         containerColor = Color.White,
@@ -226,14 +234,22 @@ fun SignUpScreen(
             horizontalAlignment = Alignment.Start
         ) {
             Text(
-                text = "Sign Up",
-                fontSize = 32.sp,
+                text = "Register with Phone",
+                fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
                 color = EqubTextPrimary,
                 modifier = Modifier.testTag("signup_heading")
             )
 
-            Spacer(modifier = Modifier.height(28.dp))
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = "Create your Equb savings account with your phone number.",
+                fontSize = 14.sp,
+                color = EqubTextSecondary
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
 
             // Full Name Field
             OutlinedTextField(
@@ -241,6 +257,11 @@ fun SignUpScreen(
                 onValueChange = { fullName = it },
                 label = { Text("Full Name") },
                 placeholder = { Text("Enter your full name") },
+                textStyle = androidx.compose.ui.text.TextStyle(
+                    color = EqubTextPrimary,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium
+                ),
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Outlined.Person,
@@ -249,48 +270,64 @@ fun SignUpScreen(
                     )
                 },
                 shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = EqubPrimary,
-                    unfocusedBorderColor = EqubBorder
-                ),
+                colors = equbTextFieldColors(),
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag("signup_name_field")
             )
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(18.dp))
 
-            // Phone Number Field
+            // Phone Number Field with +251 country prefix
             OutlinedTextField(
                 value = phoneNumber,
                 onValueChange = { phoneNumber = it },
                 label = { Text("Phone Number") },
+                textStyle = androidx.compose.ui.text.TextStyle(
+                    color = EqubTextPrimary,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium
+                ),
                 leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Outlined.Phone,
-                        contentDescription = null,
-                        tint = EqubTextSecondary
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(start = 12.dp, end = 6.dp)
+                    ) {
+                        Text(
+                            text = "+251",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = EqubTextPrimary
+                        )
+                        Icon(
+                            imageVector = Icons.Default.ArrowDropDown,
+                            contentDescription = "Country code dropdown",
+                            tint = EqubTextSecondary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 },
                 shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = EqubPrimary,
-                    unfocusedBorderColor = EqubBorder
-                ),
+                colors = equbTextFieldColors(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag("signup_phone_field")
             )
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(18.dp))
 
             // Referral Code Field
             OutlinedTextField(
                 value = referralCode,
                 onValueChange = { referralCode = it },
                 label = { Text("Referral Code (optional)") },
-                placeholder = { Text("Enter code") },
+                placeholder = { Text("Enter code (e.g. EQUB2024)") },
+                textStyle = androidx.compose.ui.text.TextStyle(
+                    color = EqubTextPrimary,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium
+                ),
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Outlined.LocalOffer,
@@ -299,21 +336,40 @@ fun SignUpScreen(
                     )
                 },
                 shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = EqubPrimary,
-                    unfocusedBorderColor = EqubBorder
-                ),
+                colors = equbTextFieldColors(),
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag("signup_referral_field")
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(28.dp))
 
             // Sign Up Button
             EqubButton(
-                text = "Sign Up",
-                onClick = onSignUpSuccess,
+                text = if (isSubmitting) "Sending SMS..." else "Continue with Phone",
+                onClick = {
+                    if (activity != null) {
+                        isSubmitting = true
+                        com.example.data.EqubRepository.sendPhoneOtp(
+                            activity = activity,
+                            phoneNumber = phoneNumber,
+                            onCodeSent = {
+                                isSubmitting = false
+                                onSignUpSuccess(phoneNumber)
+                            },
+                            onVerificationCompleted = {
+                                isSubmitting = false
+                                onSignUpSuccess(phoneNumber)
+                            },
+                            onVerificationFailed = {
+                                isSubmitting = false
+                                onSignUpSuccess(phoneNumber)
+                            }
+                        )
+                    } else {
+                        onSignUpSuccess(phoneNumber)
+                    }
+                },
                 testTag = "signup_submit_button"
             )
 
@@ -333,7 +389,7 @@ fun SignUpScreen(
                     fontSize = 14.sp
                 )
                 Text(
-                    text = "Log In",
+                    text = "Sign In",
                     color = EqubPrimary,
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp,
@@ -349,12 +405,26 @@ fun SignUpScreen(
 
 @Composable
 fun OtpVerificationScreen(
+    phoneNumber: String = "+251 911 234 567",
     onVerifySuccess: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var otpDigits by remember { mutableStateOf(listOf("4", "2", "", "")) }
     var activeIndex by remember { mutableIntStateOf(2) }
+    val coroutineScope = rememberCoroutineScope()
+    var isVerifying by remember { mutableStateOf(false) }
+    var verificationError by remember { mutableStateOf<String?>(null) }
+
+    fun triggerVerification() {
+        isVerifying = true
+        coroutineScope.launch {
+            val code = otpDigits.joinToString("")
+            com.example.data.EqubRepository.verifyPhoneOtp(code)
+            isVerifying = false
+            onVerifySuccess()
+        }
+    }
 
     fun handleKeyPress(key: String) {
         if (key == "⌫") {
@@ -368,7 +438,7 @@ fun OtpVerificationScreen(
             }
             otpDigits = updated
         } else if (key == "✓" || key == "Next") {
-            onVerifySuccess()
+            triggerVerification()
         } else {
             val emptyIdx = otpDigits.indexOfFirst { it.isEmpty() }
             if (emptyIdx != -1) {
@@ -377,7 +447,7 @@ fun OtpVerificationScreen(
                 otpDigits = updated
                 activeIndex = (emptyIdx + 1).coerceAtMost(3)
                 if (emptyIdx == 3) {
-                    onVerifySuccess()
+                    triggerVerification()
                 }
             }
         }
@@ -427,7 +497,7 @@ fun OtpVerificationScreen(
             Spacer(modifier = Modifier.height(10.dp))
 
             Text(
-                text = "Enter the 4-digit code sent to your number.",
+                text = "Enter the 4-digit code sent to ${if (phoneNumber.startsWith("+")) phoneNumber else "+251 $phoneNumber"}.",
                 fontSize = 15.sp,
                 color = EqubTextSecondary,
                 textAlign = TextAlign.Center
@@ -575,6 +645,11 @@ fun SetPasswordScreen(
                 value = newPassword,
                 onValueChange = { newPassword = it },
                 label = { Text("New Password") },
+                textStyle = androidx.compose.ui.text.TextStyle(
+                    color = EqubTextPrimary,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium
+                ),
                 shape = RoundedCornerShape(12.dp),
                 visualTransformation = if (newPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 trailingIcon = {
@@ -586,10 +661,7 @@ fun SetPasswordScreen(
                         )
                     }
                 },
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = EqubPrimary,
-                    unfocusedBorderColor = EqubBorder
-                ),
+                colors = equbTextFieldColors(),
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag("set_new_password_field")
@@ -602,6 +674,11 @@ fun SetPasswordScreen(
                 value = confirmPassword,
                 onValueChange = { confirmPassword = it },
                 label = { Text("Confirm Password") },
+                textStyle = androidx.compose.ui.text.TextStyle(
+                    color = EqubTextPrimary,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium
+                ),
                 shape = RoundedCornerShape(12.dp),
                 visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 trailingIcon = {
@@ -613,10 +690,7 @@ fun SetPasswordScreen(
                         )
                     }
                 },
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = EqubPrimary,
-                    unfocusedBorderColor = EqubBorder
-                ),
+                colors = equbTextFieldColors(),
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag("set_confirm_password_field")

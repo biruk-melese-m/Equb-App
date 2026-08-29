@@ -32,13 +32,16 @@ private val LightColorScheme = lightColorScheme(
     surface = EqubSurface,
     onBackground = EqubTextPrimary,
     onSurface = EqubTextPrimary,
-    outline = EqubCardBorder
+    onSurfaceVariant = EqubTextSecondary,
+    surfaceVariant = EqubSurface,
+    outline = EqubCardBorder,
+    outlineVariant = EqubBorder
 )
 
 @Composable
 fun MyApplicationTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = false, // Use consistent Equb branding
+    darkTheme: Boolean = false, // Enforce crisp Equb light branding by default
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme

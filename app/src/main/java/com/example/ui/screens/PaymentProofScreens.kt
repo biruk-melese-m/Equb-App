@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.sp
 import com.example.data.EqubRepository
 import com.example.ui.components.EqubButton
 import com.example.ui.components.EqubTopBar
+import com.example.ui.components.equbTextFieldColors
 import com.example.ui.theme.*
 
 @Composable
@@ -58,11 +59,13 @@ fun SubmitPaymentProofScreen(
                 onValueChange = { transactionId = it },
                 label = { Text("Transaction ID") },
                 placeholder = { Text("Enter Transaction ID") },
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = EqubPrimary,
-                    unfocusedBorderColor = EqubBorder
+                textStyle = androidx.compose.ui.text.TextStyle(
+                    color = EqubTextPrimary,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium
                 ),
+                shape = RoundedCornerShape(12.dp),
+                colors = equbTextFieldColors(),
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag("transaction_id_field")

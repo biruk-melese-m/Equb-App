@@ -1,5 +1,12 @@
 package com.example.ui.screens
 
+import android.net.Uri
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -12,14 +19,20 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -35,230 +48,767 @@ import com.example.data.EqubRepository
 import com.example.ui.components.EqubButton
 import com.example.ui.components.EqubStatusBadge
 import com.example.ui.components.EqubTopBar
+import com.example.ui.components.equbTextFieldColors
 import com.example.ui.theme.*
 
+// =========================================================================
+// STEP 1 OF 3: Personal Information
+// =========================================================================
 @Composable
 fun EqubApplicationFormScreen(
     equb: EqubItem,
-    onSubmit: () -> Unit,
+    onNext: (fullName: String, phone: String, reason: String) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var fullName by remember { mutableStateOf("Abebe Bikila") }
-    var phoneNumber by remember { mutableStateOf("911234567") }
-    var savingsGoalReason by remember { mutableStateOf("I want to save towards opening my retail shop inventory and building systematic savings habits.") }
+    var phoneNumber by remember { mutableStateOf("911 234 567") }
+    var savingsGoalReason by remember { mutableStateOf("") }
 
     Scaffold(
-        containerColor = Color.White,
+        containerColor = EqubBackground,
         topBar = {
-            EqubTopBar(
-                title = "Apply in Equb",
-                onBack = onBack
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(
+                    onClick = onBack,
+                    modifier = Modifier.testTag("apply_step1_back_button")
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = EqubTextPrimary
+                    )
+                }
+            }
         },
-        modifier = modifier.testTag("apply_in_equb_screen")
+        bottomBar = {
+            Surface(
+                color = Color.White,
+                shadowElevation = 8.dp,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .navigationBarsPadding()
+                        .padding(horizontal = 20.dp, vertical = 16.dp)
+                ) {
+                    Button(
+                        onClick = {
+                            onNext(
+                                fullName.ifEmpty { "Abebe Bikila" },
+                                phoneNumber.ifEmpty { "911 234 567" },
+                                savingsGoalReason.ifEmpty { "Savings plan" }
+                            )
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(54.dp)
+                            .testTag("apply_step1_next_button"),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = EqubPrimary,
+                            contentColor = Color.White
+                        ),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = "Next",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        modifier = modifier.testTag("apply_step1_screen")
     ) { innerPadding ->
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(horizontal = 20.dp, vertical = 8.dp)
+                .padding(horizontal = 20.dp),
+            contentPadding = PaddingValues(top = 4.dp, bottom = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            // Step 1 of 3 Progress
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Step 1 of 3",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = EqubTextSecondary
-                )
-                Text(
-                    text = equb.title,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = EqubPrimary
-                )
+            // Header Progress & Step Title
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "STEP 1 OF 3",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = EqubPrimary,
+                            letterSpacing = 1.sp
+                        )
+                        Text(
+                            text = "Personal Info",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = EqubTextSecondary
+                        )
+                    }
+
+                    // Progress Bar (33% filled)
+                    LinearProgressIndicator(
+                        progress = { 0.33f },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(6.dp)
+                            .clip(CircleShape),
+                        color = EqubPrimary,
+                        trackColor = Color(0xFFE7EEFE)
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = "Apply in Equb",
+                        fontSize = 26.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = EqubTextPrimary,
+                        letterSpacing = (-0.4).sp
+                    )
+
+                    Text(
+                        text = "Please provide your details to join this savings cycle.",
+                        fontSize = 15.sp,
+                        color = EqubTextSecondary,
+                        lineHeight = 22.sp
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            LinearProgressIndicator(
-                progress = { 0.33f },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(6.dp)
-                    .clip(RoundedCornerShape(3.dp)),
-                color = EqubPrimary,
-                trackColor = Color(0xFFEBEBF5)
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Text(
-                text = "Personal Information",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = EqubTextPrimary
-            )
-
-            Spacer(modifier = Modifier.height(18.dp))
-
-            // Full Name Field
-            OutlinedTextField(
-                value = fullName,
-                onValueChange = { fullName = it },
-                label = { Text("Full Name") },
-                placeholder = { Text("e.g., Abebe Bikila") },
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = EqubPrimary,
-                    unfocusedBorderColor = EqubBorder
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("apply_fullname_field")
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Phone Number Field
-            OutlinedTextField(
-                value = phoneNumber,
-                onValueChange = { phoneNumber = it },
-                label = { Text("Phone Number") },
-                placeholder = { Text("e.g., 911234567") },
-                leadingIcon = {
+            // Full Name Input
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(
-                        text = "+251 | ",
+                        text = "Full Name",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = EqubTextSecondary,
-                        modifier = Modifier.padding(start = 12.dp)
+                        color = EqubTextPrimary
                     )
-                },
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = EqubPrimary,
-                    unfocusedBorderColor = EqubBorder
-                ),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("apply_phone_field")
-            )
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Why do you want to join this Equb?
-            OutlinedTextField(
-                value = savingsGoalReason,
-                onValueChange = { savingsGoalReason = it },
-                label = { Text("Why do you want to join this Equb?") },
-                placeholder = { Text("Explain your savings goals...") },
-                minLines = 4,
-                maxLines = 6,
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = EqubPrimary,
-                    unfocusedBorderColor = EqubBorder
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("apply_reason_field")
-            )
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            EqubButton(
-                text = "Next",
-                onClick = {
-                    EqubRepository.submitApplication(
-                        equbTitle = equb.title,
-                        name = fullName,
-                        phone = phoneNumber,
-                        reason = savingsGoalReason
+                    OutlinedTextField(
+                        value = fullName,
+                        onValueChange = { fullName = it },
+                        placeholder = { Text("Abebe Bikila", color = Color(0xFF7A7488)) },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Outlined.Person,
+                                contentDescription = null,
+                                tint = Color(0xFF7A7488),
+                                modifier = Modifier.size(20.dp)
+                            )
+                        },
+                        textStyle = androidx.compose.ui.text.TextStyle(
+                            color = EqubTextPrimary,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium
+                        ),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = equbTextFieldColors(containerColor = Color.White),
+                        singleLine = true,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("apply_fullname_field")
                     )
-                    onSubmit()
-                },
-                testTag = "apply_form_submit_button"
-            )
+                }
+            }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            // Phone Number Input with Ethiopian Country Code
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        text = "Phone Number",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = EqubTextPrimary
+                    )
+
+                    OutlinedTextField(
+                        value = phoneNumber,
+                        onValueChange = { phoneNumber = it },
+                        placeholder = { Text("911 234 567", color = Color(0xFF7A7488)) },
+                        leadingIcon = {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(start = 12.dp, end = 6.dp)
+                            ) {
+                                Text(
+                                    text = "\uD83C\uDDEA\uD83C\uDDF9 +251",
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = EqubTextPrimary
+                                )
+                                Icon(
+                                    imageVector = Icons.Default.ArrowDropDown,
+                                    contentDescription = null,
+                                    tint = Color(0xFF7A7488),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Box(
+                                    modifier = Modifier
+                                        .height(24.dp)
+                                        .width(1.dp)
+                                        .background(Color(0xFFCBC3D9))
+                                        .padding(horizontal = 2.dp)
+                                )
+                            }
+                        },
+                        textStyle = androidx.compose.ui.text.TextStyle(
+                            color = EqubTextPrimary,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium
+                        ),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = equbTextFieldColors(containerColor = Color.White),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                        singleLine = true,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("apply_phone_field")
+                    )
+                }
+            }
+
+            // Reason Text Area
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        text = "Why do you want to join this Equb?",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = EqubTextPrimary
+                    )
+
+                    OutlinedTextField(
+                        value = savingsGoalReason,
+                        onValueChange = { savingsGoalReason = it },
+                        placeholder = {
+                            Text(
+                                "Briefly describe your financial goal or reason for joining...",
+                                color = Color(0xFF7A7488),
+                                fontSize = 14.sp
+                            )
+                        },
+                        textStyle = androidx.compose.ui.text.TextStyle(
+                            color = EqubTextPrimary,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Normal
+                        ),
+                        minLines = 4,
+                        maxLines = 6,
+                        shape = RoundedCornerShape(16.dp),
+                        colors = equbTextFieldColors(containerColor = Color.White),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("apply_reason_field")
+                    )
+                }
+            }
         }
     }
 }
 
+// =========================================================================
+// STEP 2 OF 3: Identity Verification
+// =========================================================================
 @Composable
-fun ApplicationSubmittedScreen(
-    onViewMyApplications: () -> Unit,
+fun IdentityVerificationScreen(
+    equb: EqubItem,
+    fullName: String,
+    phone: String,
+    reason: String,
+    onSubmitSuccess: () -> Unit,
+    onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var finNumber by remember { mutableStateOf("") }
+    var fanNumber by remember { mutableStateOf("") }
+    var isImageUploaded by remember { mutableStateOf(false) }
+
     Scaffold(
-        containerColor = Color.White,
+        containerColor = EqubBackground,
+        topBar = {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(
+                    onClick = onBack,
+                    modifier = Modifier.testTag("identity_back_button")
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = EqubPrimary
+                    )
+                }
+
+                Text(
+                    text = "EqubHub",
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = EqubPrimary,
+                    letterSpacing = (-0.4).sp
+                )
+
+                // Balanced placeholder
+                Spacer(modifier = Modifier.size(48.dp))
+            }
+        },
+        bottomBar = {
+            Surface(
+                color = Color.White,
+                shadowElevation = 8.dp,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .navigationBarsPadding()
+                        .padding(horizontal = 20.dp, vertical = 16.dp)
+                ) {
+                    Button(
+                        onClick = {
+                            EqubRepository.submitApplication(
+                                equbTitle = equb.title,
+                                name = fullName,
+                                phone = phone,
+                                reason = reason
+                            )
+                            onSubmitSuccess()
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(54.dp)
+                            .testTag("identity_submit_button"),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = EqubPrimary,
+                            contentColor = Color.White
+                        ),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
+                    ) {
+                        Text(
+                            text = "Submit Application",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+            }
+        },
+        modifier = modifier.testTag("identity_verification_screen")
+    ) { innerPadding ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(horizontal = 20.dp),
+            contentPadding = PaddingValues(top = 4.dp, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
+        ) {
+            // Step 2 Pill Progress Indicator
+            item {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Pill 1 (Done)
+                        Box(
+                            modifier = Modifier
+                                .width(36.dp)
+                                .height(8.dp)
+                                .clip(CircleShape)
+                                .background(EqubPrimary)
+                        )
+                        // Pill 2 (Active/Done)
+                        Box(
+                            modifier = Modifier
+                                .width(36.dp)
+                                .height(8.dp)
+                                .clip(CircleShape)
+                                .background(EqubPrimary)
+                        )
+                        // Pill 3 (Pending)
+                        Box(
+                            modifier = Modifier
+                                .width(36.dp)
+                                .height(8.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFFCBC3D9))
+                        )
+                    }
+
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            text = "Identity Verification",
+                            fontSize = 26.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = EqubTextPrimary,
+                            letterSpacing = (-0.4).sp
+                        )
+                        Text(
+                            text = "Step 2 of 3: Secure your account",
+                            fontSize = 15.sp,
+                            color = EqubTextSecondary
+                        )
+                    }
+                }
+            }
+
+            // FIN Number
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        text = "FIN Number",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = EqubTextPrimary
+                    )
+
+                    OutlinedTextField(
+                        value = finNumber,
+                        onValueChange = { finNumber = it },
+                        placeholder = { Text("Enter your FIN", color = Color(0xFF7A7488)) },
+                        textStyle = androidx.compose.ui.text.TextStyle(
+                            color = EqubTextPrimary,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium
+                        ),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = equbTextFieldColors(containerColor = Color.White),
+                        singleLine = true,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("identity_fin_field")
+                    )
+                }
+            }
+
+            // FAN Number
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        text = "FAN Number",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = EqubTextPrimary
+                    )
+
+                    OutlinedTextField(
+                        value = fanNumber,
+                        onValueChange = { fanNumber = it },
+                        placeholder = { Text("Enter your FAN", color = Color(0xFF7A7488)) },
+                        textStyle = androidx.compose.ui.text.TextStyle(
+                            color = EqubTextPrimary,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium
+                        ),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = equbTextFieldColors(containerColor = Color.White),
+                        singleLine = true,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("identity_fan_field")
+                    )
+                }
+            }
+
+            // National ID Image Upload Area (Dashed Box)
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "National ID Image",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = EqubTextPrimary
+                    )
+
+                    val dashColor = if (isImageUploaded) EqubPrimary else Color(0xFFCBC3D9)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(150.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(Color(0xFFF0F3FF))
+                            .drawBehind {
+                                val stroke = Stroke(
+                                    width = 2.dp.toPx(),
+                                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(12f, 10f), 0f)
+                                )
+                                drawRoundRect(
+                                    color = dashColor,
+                                    cornerRadius = CornerRadius(16.dp.toPx()),
+                                    style = stroke
+                                )
+                            }
+                            .clickable { isImageUploaded = !isImageUploaded }
+                            .padding(16.dp)
+                            .testTag("identity_upload_id_box"),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (isImageUploaded) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0xFFE8DDFF)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = "Uploaded",
+                                        tint = EqubPrimary,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+                                Text(
+                                    text = "National ID attached (id_photo.jpg)",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = EqubPrimary
+                                )
+                                Text(
+                                    text = "Tap to replace photo",
+                                    fontSize = 12.sp,
+                                    color = EqubTextSecondary
+                                )
+                            }
+                        } else {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0xFFE8DDFF)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.PhotoCamera,
+                                        contentDescription = "Camera",
+                                        tint = EqubPrimary,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+                                Text(
+                                    text = "Tap to select from gallery\nor take photo",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = EqubPrimary,
+                                    textAlign = TextAlign.Center,
+                                    lineHeight = 20.sp
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// =========================================================================
+// STEP 3 OF 3: Application Submitted! (Complete)
+// =========================================================================
+@Composable
+fun ApplicationSubmittedScreen(
+    onBackToDashboard: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "iconFloat")
+    val floatOffset by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = -8f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1500, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "floatAnim"
+    )
+
+    Scaffold(
+        containerColor = EqubBackground,
         modifier = modifier.testTag("application_submitted_screen")
     ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(horizontal = 24.dp, vertical = 24.dp),
+                .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // Big green checkmark circle
-            Box(
+            // Main Status Card
+            Card(
                 modifier = Modifier
-                    .size(90.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFF22C55E)),
-                contentAlignment = Alignment.Center
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(24.dp))
+                    .border(1.dp, Color(0xFFE2E8F8), RoundedCornerShape(24.dp))
+                    .testTag("application_submitted_card"),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Default.Check,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(54.dp)
-                )
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 40.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    // Floating Animated Checkmark Circle
+                    Box(
+                        modifier = Modifier
+                            .offset(y = floatOffset.dp)
+                            .size(88.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFE8DDFF)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CheckCircle,
+                            contentDescription = "Success",
+                            tint = EqubPrimary,
+                            modifier = Modifier.size(46.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(28.dp))
+
+                    Text(
+                        text = "Application\nSubmitted!",
+                        fontSize = 26.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = EqubTextPrimary,
+                        textAlign = TextAlign.Center,
+                        letterSpacing = (-0.4).sp,
+                        lineHeight = 32.sp,
+                        modifier = Modifier.testTag("application_submitted_title")
+                    )
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    Text(
+                        text = "Your application to join the Equb is being reviewed. We'll notify you once it's approved.",
+                        fontSize = 15.sp,
+                        color = EqubTextSecondary,
+                        textAlign = TextAlign.Center,
+                        lineHeight = 24.sp,
+                        modifier = Modifier.padding(horizontal = 8.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(36.dp))
+
+                    Button(
+                        onClick = onBackToDashboard,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp)
+                            .testTag("application_back_to_dashboard_button"),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = EqubPrimary,
+                            contentColor = Color.White
+                        ),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
+                    ) {
+                        Text(
+                            text = "Back to Dashboard",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(32.dp))
 
+            // Step 3 of 3: Complete Progress Indicator
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .width(36.dp)
+                        .height(8.dp)
+                        .clip(CircleShape)
+                        .background(EqubPrimary.copy(alpha = 0.4f))
+                )
+                Box(
+                    modifier = Modifier
+                        .width(36.dp)
+                        .height(8.dp)
+                        .clip(CircleShape)
+                        .background(EqubPrimary.copy(alpha = 0.4f))
+                )
+                Box(
+                    modifier = Modifier
+                        .width(36.dp)
+                        .height(8.dp)
+                        .clip(CircleShape)
+                        .background(EqubPrimary)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
             Text(
-                text = "Application Submitted!",
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Bold,
-                color = EqubTextPrimary,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.testTag("application_submitted_title")
-            )
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            Text(
-                text = "Your application is under review. You will be notified once it is approved.",
-                fontSize = 16.sp,
-                color = EqubTextSecondary,
-                textAlign = TextAlign.Center,
-                lineHeight = 24.sp,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-
-            Spacer(modifier = Modifier.height(44.dp))
-
-            EqubButton(
-                text = "View My Applications",
-                onClick = onViewMyApplications,
-                isOutlined = true,
-                testTag = "view_my_applications_button"
+                text = "Step 3 of 3: Complete",
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium,
+                color = EqubTextSecondary
             )
         }
     }
 }
 
+// =========================================================================
+// My Applications List & Approval Views
+// =========================================================================
 @Composable
 fun MyApplicationsScreen(
     onSelectApplication: (EqubApplication) -> Unit,
@@ -422,7 +972,6 @@ fun ApplicationApprovedScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // Confetti illustration
             Box(
                 modifier = Modifier
                     .size(240.dp)
@@ -489,7 +1038,6 @@ fun EqubJoinedScreen(
                 .padding(innerPadding)
                 .padding(horizontal = 20.dp, vertical = 16.dp)
         ) {
-            // Top Blue/Purple Gradient Banner Card
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -516,7 +1064,7 @@ fun EqubJoinedScreen(
                             )
                             Spacer(modifier = Modifier.width(10.dp))
                             Text(
-                                text = "Monthly Savings Equb",
+                                text = "Weekly Car Fund",
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
@@ -526,7 +1074,7 @@ fun EqubJoinedScreen(
                         Spacer(modifier = Modifier.height(24.dp))
 
                         Text(
-                            text = "My Position: 7 / 20",
+                            text = "My Position: 4 / 15",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = Color.White.copy(alpha = 0.9f)
@@ -535,7 +1083,7 @@ fun EqubJoinedScreen(
                         Spacer(modifier = Modifier.height(8.dp))
 
                         Text(
-                            text = "Total Members: 20",
+                            text = "Total Members: 15",
                             fontSize = 14.sp,
                             color = Color.White.copy(alpha = 0.75f)
                         )
@@ -543,7 +1091,7 @@ fun EqubJoinedScreen(
                         Spacer(modifier = Modifier.height(16.dp))
 
                         Text(
-                            text = "Total Payout: 100,550 ETB",
+                            text = "Total Payout: 250,000 ETB",
                             fontSize = 22.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White

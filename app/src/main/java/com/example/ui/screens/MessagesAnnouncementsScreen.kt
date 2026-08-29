@@ -27,6 +27,7 @@ import com.example.data.ChatMessage
 import com.example.data.EqubRepository
 import com.example.ui.components.EqubAvatar
 import com.example.ui.components.EqubTopBar
+import com.example.ui.components.equbTextFieldColors
 import com.example.ui.theme.*
 
 @Composable
@@ -89,12 +90,64 @@ fun MessagesAnnouncementsScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             if (selectedTab == "Messages") {
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    items(messages) { msg ->
-                        MessageItemCard(message = msg)
+                var messageInput by remember { mutableStateOf("") }
+                Column(modifier = Modifier.fillMaxSize()) {
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                    ) {
+                        items(messages) { msg ->
+                            MessageItemCard(message = msg)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Message input field
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        OutlinedTextField(
+                            value = messageInput,
+                            onValueChange = { messageInput = it },
+                            placeholder = { Text("Write a message to group...") },
+                            textStyle = androidx.compose.ui.text.TextStyle(
+                                color = EqubTextPrimary,
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Normal
+                            ),
+                            shape = RoundedCornerShape(24.dp),
+                            colors = equbTextFieldColors(containerColor = Color.White),
+                            modifier = Modifier
+                                .weight(1f)
+                                .testTag("chat_input_field")
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        IconButton(
+                            onClick = {
+                                if (messageInput.isNotBlank()) {
+                                    EqubRepository.sendChatMessage(messageInput)
+                                    messageInput = ""
+                                }
+                            },
+                            modifier = Modifier
+                                .size(48.dp)
+                                .clip(CircleShape)
+                                .background(EqubPrimary)
+                                .testTag("send_chat_message_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Send,
+                                contentDescription = "Send Message",
+                                tint = Color.White,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
                     }
                 }
             } else {

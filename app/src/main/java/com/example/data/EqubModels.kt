@@ -88,11 +88,11 @@ data class Announcement(
 )
 
 data class UserProfile(
-    val name: String = "Abel",
+    val name: String = "Brook",
     val fullName: String = "Brook Melles",
     val phone: String = "+251 911 234 567",
     val email: String = "brook.melles@email.com",
     val totalSavings: String = "20,000 ETB",
     val lastAddedAmount: String = "500 ETB",
-    val referralCode: String = "EQUI2023"
+    val referralCode: String = "EQUB2024"
 )

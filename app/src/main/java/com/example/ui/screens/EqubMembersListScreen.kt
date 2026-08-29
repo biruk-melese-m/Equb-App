@@ -24,6 +24,7 @@ import com.example.data.Member
 import com.example.ui.components.EqubAvatar
 import com.example.ui.components.EqubStatusBadge
 import com.example.ui.components.EqubTopBar
+import com.example.ui.components.equbTextFieldColors
 import com.example.ui.theme.*
 
 @Composable
@@ -60,6 +61,11 @@ fun EqubMembersListScreen(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
                 placeholder = { Text("Search members...") },
+                textStyle = androidx.compose.ui.text.TextStyle(
+                    color = EqubTextPrimary,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Medium
+                ),
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Search,
@@ -68,12 +74,7 @@ fun EqubMembersListScreen(
                     )
                 },
                 shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White,
-                    focusedBorderColor = EqubPrimary,
-                    unfocusedBorderColor = EqubCardBorder
-                ),
+                colors = equbTextFieldColors(containerColor = Color.White),
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag("search_members_field")

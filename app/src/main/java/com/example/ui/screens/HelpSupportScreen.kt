@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.components.EqubButton
 import com.example.ui.components.EqubTopBar
+import com.example.ui.components.equbTextFieldColors
 import com.example.ui.theme.*
 
 @Composable
@@ -78,6 +79,11 @@ fun HelpSupportScreen(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
                 placeholder = { Text("How can we help you?") },
+                textStyle = androidx.compose.ui.text.TextStyle(
+                    color = EqubTextPrimary,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Medium
+                ),
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Search,
@@ -86,12 +92,7 @@ fun HelpSupportScreen(
                     )
                 },
                 shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White,
-                    focusedBorderColor = EqubPrimary,
-                    unfocusedBorderColor = EqubCardBorder
-                ),
+                colors = equbTextFieldColors(containerColor = Color.White),
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag("help_search_field")

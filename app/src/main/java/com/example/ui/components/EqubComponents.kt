@@ -43,7 +43,8 @@ fun EqubTopBar(
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontWeight = FontWeight.Bold,
                         fontSize = 19.sp,
-                        color = contentColor
+                        color = contentColor,
+                        letterSpacing = (-0.2).sp
                     ),
                     modifier = Modifier.testTag("top_bar_title")
                 )
@@ -53,12 +54,15 @@ fun EqubTopBar(
             if (onBack != null) {
                 IconButton(
                     onClick = onBack,
-                    modifier = Modifier.testTag("top_bar_back_button")
+                    modifier = Modifier
+                        .size(48.dp)
+                        .testTag("top_bar_back_button")
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back",
-                        tint = contentColor
+                        tint = contentColor,
+                        modifier = Modifier.size(24.dp)
                     )
                 }
             }
@@ -69,12 +73,15 @@ fun EqubTopBar(
             } else if (rightIcon != null && onRightAction != null) {
                 IconButton(
                     onClick = onRightAction,
-                    modifier = Modifier.testTag("top_bar_right_action")
+                    modifier = Modifier
+                        .size(48.dp)
+                        .testTag("top_bar_right_action")
                 ) {
                     Icon(
                         imageVector = rightIcon,
                         contentDescription = "Action",
-                        tint = contentColor
+                        tint = contentColor,
+                        modifier = Modifier.size(24.dp)
                     )
                 }
             }
@@ -101,20 +108,20 @@ fun EqubStatusBadge(
 
     Surface(
         color = bgColor,
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(10.dp),
         modifier = modifier
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center,
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
         ) {
             if (icon != null) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
                     tint = textColor,
-                    modifier = Modifier.size(14.dp)
+                    modifier = Modifier.size(13.dp)
                 )
                 Spacer(modifier = Modifier.width(4.dp))
             }
@@ -122,7 +129,8 @@ fun EqubStatusBadge(
                 text = status,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = textColor
+                color = textColor,
+                letterSpacing = 0.1.sp
             )
         }
     }
@@ -143,7 +151,8 @@ fun EqubAvatar(
     Box(
         modifier = modifier
             .clip(CircleShape)
-            .background(bgColor),
+            .background(bgColor)
+            .border(1.5.dp, Color.White.copy(alpha = 0.3f), CircleShape),
         contentAlignment = Alignment.Center
     ) {
         Text(
@@ -169,13 +178,18 @@ fun EqubButton(
         OutlinedButton(
             onClick = onClick,
             enabled = enabled,
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(14.dp),
             colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = EqubPrimary
+                contentColor = EqubPrimary,
+                disabledContentColor = EqubTextTertiary
             ),
             border = ButtonDefaults.outlinedButtonBorder.copy(
-                brush = androidx.compose.ui.graphics.SolidColor(EqubPrimary)
+                brush = androidx.compose.ui.graphics.SolidColor(
+                    if (enabled) EqubPrimary else EqubBorder
+                ),
+                width = 1.5.dp
             ),
+            elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
             modifier = modifier
                 .fillMaxWidth()
                 .height(52.dp)
@@ -184,17 +198,24 @@ fun EqubButton(
             Text(
                 text = text,
                 fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = 0.2.sp
             )
         }
     } else {
         Button(
             onClick = onClick,
             enabled = enabled,
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(14.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = if (isSecondary) EqubButtonSecondary else EqubPrimary,
-                contentColor = if (isSecondary) EqubButtonSecondaryText else Color.White
+                contentColor = if (isSecondary) EqubButtonSecondaryText else Color.White,
+                disabledContainerColor = Color(0xFFE8E8EE),
+                disabledContentColor = EqubTextTertiary
+            ),
+            elevation = ButtonDefaults.buttonElevation(
+                defaultElevation = if (isSecondary) 0.dp else 2.dp,
+                pressedElevation = 0.dp
             ),
             modifier = modifier
                 .fillMaxWidth()
@@ -204,8 +225,37 @@ fun EqubButton(
             Text(
                 text = text,
                 fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = 0.2.sp
             )
         }
     }
 }
+
+@Composable
+fun equbTextFieldColors(
+    containerColor: Color = Color.White,
+    textColor: Color = EqubTextPrimary
+): TextFieldColors {
+    return OutlinedTextFieldDefaults.colors(
+        focusedTextColor = textColor,
+        unfocusedTextColor = textColor,
+        disabledTextColor = EqubTextTertiary,
+        focusedContainerColor = containerColor,
+        unfocusedContainerColor = containerColor,
+        disabledContainerColor = containerColor,
+        focusedBorderColor = EqubPrimary,
+        unfocusedBorderColor = EqubBorder,
+        disabledBorderColor = EqubBorder,
+        focusedLabelColor = EqubPrimary,
+        unfocusedLabelColor = EqubTextSecondary,
+        focusedPlaceholderColor = EqubTextTertiary,
+        unfocusedPlaceholderColor = EqubTextTertiary,
+        cursorColor = EqubPrimary,
+        focusedLeadingIconColor = EqubPrimary,
+        unfocusedLeadingIconColor = EqubTextSecondary,
+        focusedTrailingIconColor = EqubPrimary,
+        unfocusedTrailingIconColor = EqubTextSecondary
+    )
+}
+
