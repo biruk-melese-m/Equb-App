@@ -179,7 +179,7 @@ fun EqubApplicationFormScreen(
                             .height(6.dp)
                             .clip(CircleShape),
                         color = EqubPrimary,
-                        trackColor = Color(0xFFE7EEFE)
+                        trackColor = Color(0xFFF7E6DC)
                     )
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -469,7 +469,7 @@ fun IdentityVerificationScreen(
                                 .width(36.dp)
                                 .height(8.dp)
                                 .clip(CircleShape)
-                                .background(Color(0xFFCBC3D9))
+                                .background(Color(0xFFEBD3C7))
                         )
                     }
 
@@ -561,13 +561,13 @@ fun IdentityVerificationScreen(
                         color = EqubTextPrimary
                     )
 
-                    val dashColor = if (isImageUploaded) EqubPrimary else Color(0xFFCBC3D9)
+                    val dashColor = if (isImageUploaded) EqubPrimary else Color(0xFFEBD3C7)
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(150.dp)
                             .clip(RoundedCornerShape(16.dp))
-                            .background(Color(0xFFF0F3FF))
+                            .background(Color(0xFFFFF9F6))
                             .drawBehind {
                                 val stroke = Stroke(
                                     width = 2.dp.toPx(),
@@ -593,7 +593,7 @@ fun IdentityVerificationScreen(
                                     modifier = Modifier
                                         .size(48.dp)
                                         .clip(CircleShape)
-                                        .background(Color(0xFFE8DDFF)),
+                                        .background(Color(0xFFFFE3B3)),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
@@ -624,7 +624,7 @@ fun IdentityVerificationScreen(
                                     modifier = Modifier
                                         .size(48.dp)
                                         .clip(CircleShape)
-                                        .background(Color(0xFFE8DDFF)),
+                                        .background(Color(0xFFFFE3B3)),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
@@ -705,7 +705,7 @@ fun ApplicationSubmittedScreen(
                             .offset(y = floatOffset.dp)
                             .size(88.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFFE8DDFF)),
+                            .background(Color(0xFFFFE3B3)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
@@ -1049,7 +1049,7 @@ fun EqubJoinedScreen(
                         .fillMaxWidth()
                         .background(
                             Brush.verticalGradient(
-                                listOf(Color(0xFF4C30A0), Color(0xFF381F78))
+                                listOf(EqubPrimary, EqubPrimaryLight)
                             )
                         )
                         .padding(24.dp)

@@ -83,7 +83,7 @@ fun CurrentRoundStatusScreen(
                             color = EqubTextPrimary
                         )
                         Surface(
-                            color = Color(0xFFEDE8FA),
+                            color = EqubPrimaryContainer,
                             shape = RoundedCornerShape(12.dp)
                         ) {
                             Text(
@@ -114,7 +114,7 @@ fun CurrentRoundStatusScreen(
                             .height(8.dp)
                             .clip(RoundedCornerShape(4.dp)),
                         color = EqubPrimary,
-                        trackColor = Color(0xFFEDE8FA)
+                        trackColor = Color(0xFFF7E6DC)
                     )
 
                     Spacer(modifier = Modifier.height(20.dp))
@@ -234,7 +234,7 @@ fun PendingMemberRow(
                 onClick = onRemind,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isReminded) Color(0xFFEDE8FA) else EqubPrimary,
+                    containerColor = if (isReminded) EqubPrimaryContainer else EqubPrimary,
                     contentColor = if (isReminded) EqubPrimary else Color.White
                 ),
                 contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
@@ -260,7 +260,7 @@ fun StatPill(
     Surface(
         modifier = modifier
             .clip(RoundedCornerShape(10.dp)),
-        color = Color(0xFFF7F6FC)
+        color = Color(0xFFFFF7F2)
     ) {
         Column(
             modifier = Modifier

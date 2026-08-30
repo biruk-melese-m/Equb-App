@@ -304,7 +304,6 @@ fun EqubApp() {
                             is Screen.MemberProfileDetail -> {
                                 MemberProfileDetailScreen(
                                     member = screen.member,
-                                    onSendMessage = { navigateTo(Screen.MessagesAnnouncements) },
                                     onBack = { popBack() }
                                 )
                             }

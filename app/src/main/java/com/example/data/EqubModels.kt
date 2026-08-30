@@ -9,12 +9,17 @@ data class EqubItem(
     val maxMembers: Int,
     val durationMonths: Int,
     val nextPaymentDate: String,
-    val category: String, // "Savings", "Business", "House", "Auto"
+    val category: String, // "Savings", "Business", "House", "Auto", "Tech", "Travel"
     val goalAmount: String,
     val progressAmount: String,
     val dueDate: String,
     val isUserJoined: Boolean = false,
-    val userPosition: Int = 7
+    val userPosition: Int = 4,
+    val currentRound: Int = 4,
+    val totalRounds: Int = 12,
+    val userSavedAmount: String = "20,000 ETB",
+    val daysLeftTillDue: Int = 5,
+    val securityDetail: String = "100% ID-verified members with collateral backing & CBE escrow bank guarantee."
 )
 
 data class Member(
@@ -84,6 +89,8 @@ data class Announcement(
     val title: String,
     val description: String,
     val date: String,
+    val category: String = "General",
+    val isUrgent: Boolean = false,
     val isSystem: Boolean = true
 )
 

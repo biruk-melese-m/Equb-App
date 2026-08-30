@@ -37,11 +37,32 @@ object EqubRepository {
 
     private val defaultEqubs = listOf(
         EqubItem(
+            id = "equb-biruk",
+            title = "Biruk’s Equb",
+            totalAmount = "50,000 ETB",
+            monthlyContribution = "ETB 5,000",
+            currentMembers = 10,
+            maxMembers = 10,
+            durationMonths = 10,
+            nextPaymentDate = "Sep 2, 2025",
+            category = "Savings",
+            goalAmount = "50,000 ETB",
+            progressAmount = "15,000 ETB",
+            dueDate = "Sep 2, 2025",
+            isUserJoined = true,
+            userPosition = 2,
+            currentRound = 3,
+            totalRounds = 10,
+            userSavedAmount = "ETB 15,000",
+            daysLeftTillDue = 3,
+            securityDetail = "100% ID-verified members with CBE bank escrow & collateral backing."
+        ),
+        EqubItem(
             id = "equb-car",
             title = "Weekly Car Fund",
             totalAmount = "250,000 ETB",
             monthlyContribution = "5,000 ETB",
-            currentMembers = 12,
+            currentMembers = 15,
             maxMembers = 15,
             durationMonths = 12,
             nextPaymentDate = "12th Oct",
@@ -50,11 +71,16 @@ object EqubRepository {
             progressAmount = "100,000 ETB",
             dueDate = "12th Oct",
             isUserJoined = true,
-            userPosition = 4
+            userPosition = 4,
+            currentRound = 4,
+            totalRounds = 12,
+            userSavedAmount = "20,000 ETB",
+            daysLeftTillDue = 5,
+            securityDetail = "100% ID-verified members with collateral backing & CBE escrow bank guarantee."
         ),
         EqubItem(
             id = "equb-tech",
-            title = "Tech Upgrades",
+            title = "Tech Upgrades Equb",
             totalAmount = "80,000 ETB",
             monthlyContribution = "2,000 ETB",
             currentMembers = 8,
@@ -66,11 +92,16 @@ object EqubRepository {
             progressAmount = "60,000 ETB",
             dueDate = "18th Oct",
             isUserJoined = true,
-            userPosition = 2
+            userPosition = 2,
+            currentRound = 4,
+            totalRounds = 10,
+            userSavedAmount = "8,000 ETB",
+            daysLeftTillDue = 11,
+            securityDetail = "Verified tech professionals circle with digital ID validation."
         ),
         EqubItem(
             id = "equb-holiday",
-            title = "Holiday Savings",
+            title = "Holiday & Travel Savings",
             totalAmount = "120,000 ETB",
             monthlyContribution = "3,000 ETB",
             currentMembers = 6,
@@ -81,8 +112,13 @@ object EqubRepository {
             goalAmount = "120,000 ETB",
             progressAmount = "18,000 ETB",
             dueDate = "25th Oct",
-            isUserJoined = true,
-            userPosition = 8
+            isUserJoined = false,
+            userPosition = 8,
+            currentRound = 2,
+            totalRounds = 12,
+            userSavedAmount = "0 ETB",
+            daysLeftTillDue = 18,
+            securityDetail = "Verified travelers group with notarized agreement."
         ),
         EqubItem(
             id = "equb-house",
@@ -97,7 +133,34 @@ object EqubRepository {
             goalAmount = "100,000 ETB",
             progressAmount = "0 ETB",
             dueDate = "Nov 15, 2024",
-            isUserJoined = false
+            isUserJoined = false,
+            userPosition = 5,
+            currentRound = 1,
+            totalRounds = 10,
+            userSavedAmount = "0 ETB",
+            daysLeftTillDue = 38,
+            securityDetail = "Property-backed collateral guarantee with legal escrow verification."
+        ),
+        EqubItem(
+            id = "equb-business",
+            title = "Merchant Business Growth",
+            totalAmount = "500,000 ETB",
+            monthlyContribution = "15,000 ETB",
+            currentMembers = 9,
+            maxMembers = 12,
+            durationMonths = 12,
+            nextPaymentDate = "Nov 01, 2024",
+            category = "Business",
+            goalAmount = "500,000 ETB",
+            progressAmount = "150,000 ETB",
+            dueDate = "Nov 01, 2024",
+            isUserJoined = false,
+            userPosition = 3,
+            currentRound = 3,
+            totalRounds = 12,
+            userSavedAmount = "0 ETB",
+            daysLeftTillDue = 24,
+            securityDetail = "Commercial trade license verified with merchant bank collateral."
         )
     )
 

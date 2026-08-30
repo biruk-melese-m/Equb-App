@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -19,11 +20,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.*
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.R
 import com.example.ui.components.EqubButton
 import com.example.ui.components.EqubTopBar
 import com.example.ui.components.equbTextFieldColors
@@ -57,16 +60,26 @@ fun LoginScreen(
         ) {
             Spacer(modifier = Modifier.height(24.dp))
 
+            // App Logo Icon
+            Image(
+                painter = painterResource(id = R.drawable.img_app_logo_v2_1788099429344),
+                contentDescription = "Equb App Logo",
+                modifier = Modifier
+                    .size(72.dp)
+                    .clip(RoundedCornerShape(16.dp))
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+
             // Ethiopic & English Equb logo
             Text(
                 text = "እቁብ",
-                fontSize = 24.sp,
+                fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 color = EqubPrimary
             )
             Text(
                 text = "Equb",
-                fontSize = 32.sp,
+                fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
                 color = EqubPrimary,
                 modifier = Modifier.testTag("login_logo")

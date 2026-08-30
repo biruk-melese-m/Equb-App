@@ -13,7 +13,7 @@ import androidx.room.RoomDatabase
         ChatMessageEntity::class,
         UserProfileEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class EqubDatabase : RoomDatabase() {
@@ -32,9 +32,9 @@ abstract class EqubDatabase : RoomDatabase() {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     EqubDatabase::class.java,
-                    "equb_database"
+                    "equb_v2.db"
                 )
-                    .fallbackToDestructiveMigration(dropAllTables = true)
+                    .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance
                 instance

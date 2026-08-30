@@ -28,7 +28,12 @@ data class EqubEntity(
     val progressAmount: String,
     val dueDate: String,
     val isUserJoined: Boolean,
-    val userPosition: Int
+    val userPosition: Int,
+    val currentRound: Int = 4,
+    val totalRounds: Int = 12,
+    val userSavedAmount: String = "20,000 ETB",
+    val daysLeftTillDue: Int = 5,
+    val securityDetail: String = "100% ID-verified members with collateral backing & CBE escrow bank guarantee."
 ) {
     fun toDomain(): EqubItem = EqubItem(
         id = id,
@@ -44,7 +49,12 @@ data class EqubEntity(
         progressAmount = progressAmount,
         dueDate = dueDate,
         isUserJoined = isUserJoined,
-        userPosition = userPosition
+        userPosition = userPosition,
+        currentRound = currentRound,
+        totalRounds = totalRounds,
+        userSavedAmount = userSavedAmount,
+        daysLeftTillDue = daysLeftTillDue,
+        securityDetail = securityDetail
     )
 
     companion object {
@@ -62,7 +72,12 @@ data class EqubEntity(
             progressAmount = item.progressAmount,
             dueDate = item.dueDate,
             isUserJoined = item.isUserJoined,
-            userPosition = item.userPosition
+            userPosition = item.userPosition,
+            currentRound = item.currentRound,
+            totalRounds = item.totalRounds,
+            userSavedAmount = item.userSavedAmount,
+            daysLeftTillDue = item.daysLeftTillDue,
+            securityDetail = item.securityDetail
         )
     }
 }

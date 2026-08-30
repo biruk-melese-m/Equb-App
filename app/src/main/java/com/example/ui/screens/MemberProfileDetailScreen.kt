@@ -28,7 +28,6 @@ import com.example.ui.theme.*
 @Composable
 fun MemberProfileDetailScreen(
     member: Member,
-    onSendMessage: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -53,8 +52,6 @@ fun MemberProfileDetailScreen(
                 EqubTopBar(
                     title = "Member Profile",
                     onBack = onBack,
-                    rightIcon = Icons.Outlined.Mail,
-                    onRightAction = onSendMessage,
                     contentColor = Color.White
                 )
             }

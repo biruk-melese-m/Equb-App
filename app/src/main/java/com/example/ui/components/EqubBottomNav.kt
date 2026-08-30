@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.theme.EqubDivider
 import com.example.ui.theme.EqubPrimary
+import com.example.ui.theme.EqubPrimaryContainer
 import com.example.ui.theme.EqubTextSecondary
 
 enum class EqubTab(
@@ -67,7 +68,7 @@ fun EqubBottomNavBar(
                     selectedTextColor = EqubPrimary,
                     unselectedIconColor = EqubTextSecondary,
                     unselectedTextColor = EqubTextSecondary,
-                    indicatorColor = Color(0xFFEDE8FA)
+                    indicatorColor = EqubPrimaryContainer
                 ),
                 modifier = Modifier.testTag(tab.testTag)
             )

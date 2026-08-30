@@ -5,11 +5,11 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -23,11 +23,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.Announcement
-import com.example.data.ChatMessage
 import com.example.data.EqubRepository
-import com.example.ui.components.EqubAvatar
 import com.example.ui.components.EqubTopBar
-import com.example.ui.components.equbTextFieldColors
 import com.example.ui.theme.*
 
 @Composable
@@ -35,21 +32,27 @@ fun MessagesAnnouncementsScreen(
     onBack: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
-    val messages by EqubRepository.messages.collectAsState()
     val announcements by EqubRepository.announcements.collectAsState()
-    var selectedTab by remember { mutableStateOf("Messages") }
+    var selectedCategory by remember { mutableStateOf("All") }
+
+    val categories = listOf("All", "Payment Due", "Draw Winner", "Security Alert", "General")
+
+    val filteredAnnouncements = remember(announcements, selectedCategory) {
+        if (selectedCategory == "All") announcements
+        else announcements.filter { it.category.equals(selectedCategory, ignoreCase = true) }
+    }
 
     Scaffold(
         containerColor = EqubBackground,
         topBar = {
             EqubTopBar(
-                title = "Messages / Announcements",
+                title = "Announcements",
                 onBack = onBack,
-                rightIcon = Icons.Outlined.Search,
-                onRightAction = { /* search */ }
+                rightIcon = Icons.Outlined.NotificationsActive,
+                onRightAction = { /* notifications */ }
             )
         },
-        modifier = modifier.testTag("messages_announcements_screen")
+        modifier = modifier.testTag("announcements_screen")
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -57,31 +60,76 @@ fun MessagesAnnouncementsScreen(
                 .padding(innerPadding)
                 .padding(horizontal = 20.dp, vertical = 8.dp)
         ) {
-            // Segmented Tab Bar
-            Row(
+            // Official Broadcast Notice Banner
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp)),
+                color = EqubPrimary.copy(alpha = 0.08f),
+                border = androidx.compose.foundation.BorderStroke(1.dp, EqubPrimary.copy(alpha = 0.2f))
+            ) {
+                Row(
+                    modifier = Modifier.padding(14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(CircleShape)
+                            .background(EqubPrimary),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Campaign,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = "Official Equb Bulletins",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = EqubPrimary
+                        )
+                        Text(
+                            text = "Verified notices, round draw results, and payment deadlines from admins.",
+                            fontSize = 12.sp,
+                            color = EqubTextSecondary,
+                            lineHeight = 16.sp
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Category Filter Chips
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                listOf("Messages", "Announcements").forEach { tab ->
-                    val isSelected = selectedTab == tab
-                    Column(
+                items(categories) { category ->
+                    val isSelected = selectedCategory == category
+                    Surface(
                         modifier = Modifier
-                            .weight(1f)
-                            .clickable { selectedTab = tab }
-                            .padding(vertical = 12.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                            .clip(RoundedCornerShape(20.dp))
+                            .clickable { selectedCategory = category },
+                        color = if (isSelected) EqubPrimary else Color.White,
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            if (isSelected) EqubPrimary else EqubCardBorder
+                        ),
+                        shape = RoundedCornerShape(20.dp)
                     ) {
                         Text(
-                            text = tab,
-                            fontSize = 15.sp,
+                            text = category,
+                            fontSize = 13.sp,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                            color = if (isSelected) EqubPrimary else EqubTextSecondary
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(3.dp)
-                                .background(if (isSelected) EqubPrimary else Color.Transparent)
+                            color = if (isSelected) Color.White else EqubTextSecondary,
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
                         )
                     }
                 }
@@ -89,65 +137,28 @@ fun MessagesAnnouncementsScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            if (selectedTab == "Messages") {
-                var messageInput by remember { mutableStateOf("") }
-                Column(modifier = Modifier.fillMaxSize()) {
-                    LazyColumn(
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth()
-                    ) {
-                        items(messages) { msg ->
-                            MessageItemCard(message = msg)
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    // Message input field
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        OutlinedTextField(
-                            value = messageInput,
-                            onValueChange = { messageInput = it },
-                            placeholder = { Text("Write a message to group...") },
-                            textStyle = androidx.compose.ui.text.TextStyle(
-                                color = EqubTextPrimary,
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.Normal
-                            ),
-                            shape = RoundedCornerShape(24.dp),
-                            colors = equbTextFieldColors(containerColor = Color.White),
-                            modifier = Modifier
-                                .weight(1f)
-                                .testTag("chat_input_field")
+            // Announcements Stream
+            if (filteredAnnouncements.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(bottom = 60.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            imageVector = Icons.Outlined.Campaign,
+                            contentDescription = null,
+                            tint = EqubTextSecondary.copy(alpha = 0.5f),
+                            modifier = Modifier.size(54.dp)
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        IconButton(
-                            onClick = {
-                                if (messageInput.isNotBlank()) {
-                                    EqubRepository.sendChatMessage(messageInput)
-                                    messageInput = ""
-                                }
-                            },
-                            modifier = Modifier
-                                .size(48.dp)
-                                .clip(CircleShape)
-                                .background(EqubPrimary)
-                                .testTag("send_chat_message_button")
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Send,
-                                contentDescription = "Send Message",
-                                tint = Color.White,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = "No announcements in this category",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = EqubTextSecondary
+                        )
                     }
                 }
             } else {
@@ -155,66 +166,14 @@ fun MessagesAnnouncementsScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    items(announcements) { ann ->
+                    items(filteredAnnouncements) { ann ->
                         AnnouncementItemCard(announcement = ann)
+                    }
+                    item {
+                        Spacer(modifier = Modifier.height(16.dp))
                     }
                 }
             }
-        }
-    }
-}
-
-@Composable
-fun MessageItemCard(
-    message: ChatMessage,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .border(1.dp, EqubCardBorder, RoundedCornerShape(14.dp)),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.weight(1f)
-            ) {
-                EqubAvatar(
-                    name = message.senderName,
-                    bgColor = if (message.senderName.contains("Admin")) EqubPrimary else Color(0xFFE91E63)
-                )
-
-                Column {
-                    Text(
-                        text = message.senderName,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = EqubTextPrimary
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = message.text,
-                        fontSize = 13.sp,
-                        color = EqubTextSecondary,
-                        maxLines = 1
-                    )
-                }
-            }
-
-            Text(
-                text = message.time,
-                fontSize = 12.sp,
-                color = EqubTextTertiary
-            )
         }
     }
 }
@@ -228,44 +187,69 @@ fun AnnouncementItemCard(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
-            .border(1.dp, EqubCardBorder, RoundedCornerShape(14.dp)),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+            .border(
+                1.dp,
+                if (announcement.isUrgent) Color(0xFFEF4444) else EqubCardBorder,
+                RoundedCornerShape(14.dp)
+            ),
+        colors = CardDefaults.cardColors(
+            containerColor = if (announcement.isUrgent) Color(0xFFFEF2F2) else Color.White
+        )
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(18.dp)
+                .padding(16.dp)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFFEDE8FA)),
-                    contentAlignment = Alignment.Center
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Campaign,
-                        contentDescription = null,
-                        tint = EqubPrimary,
-                        modifier = Modifier.size(20.dp)
-                    )
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(if (announcement.isUrgent) Color(0xFFFEE2E2) else Color(0xFFEDE8FA)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = if (announcement.isUrgent) Icons.Default.WarningAmber else Icons.Default.Campaign,
+                            contentDescription = null,
+                            tint = if (announcement.isUrgent) Color(0xFFDC2626) else EqubPrimary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+
+                    Column {
+                        Text(
+                            text = announcement.title,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = EqubTextPrimary
+                        )
+                        Text(
+                            text = announcement.date,
+                            fontSize = 11.sp,
+                            color = EqubTextSecondary
+                        )
+                    }
                 }
 
-                Column {
+                Surface(
+                    color = if (announcement.isUrgent) Color(0xFFDC2626) else EqubPrimaryContainer,
+                    shape = RoundedCornerShape(6.dp)
+                ) {
                     Text(
-                        text = announcement.title,
-                        fontSize = 15.sp,
+                        text = if (announcement.isUrgent) "URGENT" else announcement.category,
+                        fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
-                        color = EqubTextPrimary
-                    )
-                    Text(
-                        text = announcement.date,
-                        fontSize = 11.sp,
-                        color = EqubTextSecondary
+                        color = if (announcement.isUrgent) Color.White else EqubPrimary,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                     )
                 }
             }
